@@ -1,0 +1,171 @@
+{
+  "none": {
+    "component": false,
+    "attributes": {}
+  },
+  "lower": {
+    "component": "FormatText",
+    "attributes": {
+      "format": "lowercase"
+    }
+  },
+  "upper": {
+    "component": "FormatText",
+    "attributes": {
+      "format": "uppercase"
+    }
+  },
+  "capital": {
+    "component": "FormatText",
+    "attributes": {
+      "format": "capitalize"
+    }
+  },
+  "char": {
+    "component": "FormatOverflow",
+    "attributes": {
+      "hellip": true
+    }
+  },
+  "word": {
+    "component": "FormatOverflow",
+    "attributes": {
+      "word": true,
+      "hellip": true
+    }
+  },
+  "number": {
+    "component": "FormatNumber",
+    "attributes": {
+      "separator": ",",
+      "decimal": "."
+    }
+  },
+  "price": {
+    "component": "FormatNumber",
+    "attributes": {
+      "decimals": 2,
+      "separator": ",",
+      "decimal": "."
+    }
+  },
+  "yesno": {
+    "component": "FormatYesno",
+    "attributes": {
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "rating": {
+    "component": "FormatRating",
+    "attributes": {}
+  },
+  "date": {
+    "component": "FormatDate",
+    "attributes": {}
+  },
+  "relative": {
+    "component": "FormatDate",
+    "attributes": {
+      "format": "ago"
+    }
+  },
+  "rel": {
+    "component": "FormatDate",
+    "attributes": {
+      "format": "a"
+    }
+  },
+  "html": {
+    "component": "FormatHTML",
+    "attributes": {}
+  },
+  "escaped": {
+    "component": false,
+    "attributes": {}
+  },
+  "markdown": {
+    "component": "FormatMarkdown",
+    "attributes": {}
+  },
+  "color": {
+    "component": "FormatColor",
+    "attributes": {}
+  },
+  "link": {
+    "component": "FormatLink",
+    "attributes": {}
+  },
+  "image": {
+    "component": "FormatImage",
+    "attributes": {}
+  },
+  "email": {
+    "component": "FormatEmail",
+    "attributes": {}
+  },
+  "phone": {
+    "component": "FormatPhone",
+    "attributes": {}
+  },
+  "space": {
+    "component": "FormatSeparated",
+    "attributes": {
+      "separator": " "
+    }
+  },
+  "comma": {
+    "component": "FormatSeparated",
+    "attributes": {
+      "separator": ", "
+    }
+  },
+  "line": {
+    "component": "FormatSeparated",
+    "attributes": {
+      "separator": "line"
+    }
+  },
+  "ol": {
+    "component": "FormatList",
+    "attributes": {
+      "ordered": true
+    }
+  },
+  "ul": {
+    "component": "FormatList",
+    "attributes": {}
+  },
+  "tags": {
+    "component": "FormatTaglist",
+    "attributes": {}
+  },
+  "metadata": {
+    "component": "FormatMetadata",
+    "attributes": {}
+  },
+  "table": {
+    "component": "FormatTable",
+    "attributes": {}
+  },
+  "carousel": {
+    "component": "FormatImagelist",
+    "attributes": {}
+  },
+  "pretty": {
+    "component": "FormatJSON",
+    "attributes": {}
+  },
+  "hide": {
+    "component": false,
+    "attributes": {}
+  },
+  "custom": {
+    "component": false,
+    "attributes": {}
+  },
+  "formula": {
+    "component": "FormatFormula",
+    "attributes": {}
+  }
+}
