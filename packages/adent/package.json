@@ -1,0 +1,25 @@
+{
+  "name": "adent",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "A Drizzle, Exma, NextJS, Tailwind generator",
+  "author": "Chris <chris@incept.asia>",
+  "homepage": "https://github.com/OSSPhilippines/adent",
+  "bugs": "https://github.com/OSSPhilippines/adent/issues",
+  "repository": "OSSPhilippines/adent",
+  "dependencies": {
+    "adent-exma": "0.1.0",
+    "cookies-next": "4.1.1",
+    "ethers": "5.7.2",
+    "frui": "0.0.25",
+    "jsonwebtoken": "9.0.2",
+    "r22n": "1.0.5",
+    "react-toastify": "10.0.4"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "^0.30.4",
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
