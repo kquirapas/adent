@@ -1,7 +1,7 @@
 //types
 import type { ResponsePayload } from './types';
 //helpers
-import Exception from '../Exception';
+import Exception from './Exception';
 
 /**
  * Wraps any errors or exceptions in a reponse payload. 
@@ -51,3 +51,83 @@ export function reject(error: Error|string, code = 500) {
   }
   return Promise.reject(exception);
 }
+
+const dateFormat = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric', month: 'short', day: 'numeric'
+});
+
+const time12Format = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric', minute: 'numeric', hour12: true
+});
+
+export function toPrettyDatetime(datetime: string|number|Date) {
+  const date = datetime instanceof Date? datetime: new Date(datetime);
+  return `${dateFormat.format(date)} ${time12Format.format(date)}`;
+};
+
+export function toDateLocal(datetime?: string|number|Date) {
+  const date = new Date(datetime || new Date);
+  const format = {
+    year: String(date.getFullYear()),
+    month: String(date.getMonth() + 1).padStart(2, '0'),
+    day: String(date.getDate()).padStart(2, '0'),
+    hour: String(date.getHours() % 12).padStart(2, '0'),
+    min: String(date.getMinutes()).padStart(2, '0')
+  };
+  return [
+    `${format.year}-${format.month}-${format.day}`,
+    `${format.hour}:${format.min}`
+  ].join('T');
+};
+
+export function toPrettyPrice(value: number|string) {
+  return toPrettyNumber(value, 2);
+};
+
+export function toPrettyNumber(value: number|string, decimals = 0) {
+  const formatter = new Intl.NumberFormat('en-US', { 
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+  return formatter.format(parseFloat(value.toString())).replace('$', '').trim();
+};
+
+export function toShortNumber(value: number) {
+  if (value > 1000000000) {
+    return `${Math.floor(value * 100 / 1000000000) / 100}B`;
+  } else if (value > 1000000) {
+    return `${Math.floor(value * 100 / 1000000) / 100}M`;
+  } else if (value > 1000) {
+    return `${Math.floor(value * 100 / 1000) / 100}K`;
+  }
+  return toPrettyPrice(value);
+};
+
+export function toCapitalize(str: string) {
+  // make it sure that the string is in lower case format
+  const strToLower = str.toLowerCase();
+  // split the sentence into an array of words
+  const words = strToLower.split(' ');
+  //  loop over the array of words 
+  // and capitalize the first letter of each word
+  for (let i = 0; i < words.length; i++) {
+    words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+  }
+
+  return words.join(' ');
+};
+
+export function round(value: number, decimals: number) {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+};
+
+export function arraySum(values: number[]) {
+  if (!values.length) return 0;
+  return values.reduce((total, current) => total + current) || 0;
+};
+
+export function unique(value: any, index: number, self: any[]) {
+  return self.indexOf(value) === index;
+};
