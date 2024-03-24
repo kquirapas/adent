@@ -29,25 +29,38 @@ const validators: Record<string, (value: any, ...args: any[]) => boolean> = {
     return new RegExp(regex).test(safeValue(value).toString());
   },
   //date
-  sqldate(value: any) { 
-    return this.regex(value, /^\d{4}-\d{2}-\d{2}$/);
-  },
-  sqldatetime(value: any) { 
-    return this.regex(value, /^\d{4}(\-\d{2}){2}(T|\s){1}\d{2}(:\d{2}){1,2}(\.\d{3}){0,1}Z{0,1}$/);
-  },
-  sqltime(value: any) { 
-    return this.regex(value, /^\d{2}:\d{2}(:\d{2})*$/);
+  date(value: any) { 
+    if (value instanceof Date) {
+      return true;
+    }
+    return new Date(value).toString() !== 'Invalid Date';
   },
   future(value: any) { 
-    return new Date(value || 0) > new Date();
+    return validators.date(value) && new Date(value || 0) > new Date();
   },
   past(value: any) { 
-    return new Date(value || 0) < new Date();
+    return validators.date(value) && new Date(value || 0) < new Date();
   },
   present(value: any) { 
-    return new Date(value || 0).toDateString() === new Date().toDateString();
+    return validators.date(value) 
+      && new Date(value || 0).toDateString() === new Date().toDateString();
   },
   //number
+  number(value: any) { 
+    return this.regex(value.toString(), /^\d+(\.\d+)*$/);
+  },
+  float(value: any) { 
+    return this.regex(value.toString(), /^\d+\.\d+$/);
+  },
+  price(value: any) { 
+    return this.regex(value.toString(), /^(\d*.\d{2})|(\d+)$/);
+  },
+  integer(value: any) { 
+    return this.regex(value.toString(), /^\d+$/);
+  },
+  boolean(value: any) {
+    return typeof value === 'boolean';
+  },
   gt(value: number|string, compare: number) { 
     return (Number(value) || 0) > compare;
   },
@@ -59,9 +72,6 @@ const validators: Record<string, (value: any, ...args: any[]) => boolean> = {
   },
   le(value: number|string, compare: number) { 
     return (Number(value) || 0) <= compare;
-  },
-  price(value: any) { 
-    return this.regex(value, /^\d+(\.\d{2})*$/);
   },
   //string
   ceq(value: string|number, compare: number) { 
@@ -92,24 +102,6 @@ const validators: Record<string, (value: any, ...args: any[]) => boolean> = {
     return this.le(safeValue(value).toString().split(' ').length, compare);
   },
   //type
-  string(value: any) {
-    return typeof value === 'string';
-  },
-  float(value: any) { 
-    return this.regex(value.toString(), /^\d+\.\d+$/);
-  },
-  integer(value: any) { 
-    return this.regex(value.toString(), /^\d+$/);
-  },
-  number(value: any) { 
-    return this.regex(value.toString(), /^\d+(\.\d+)*$/);
-  },
-  boolean(value: any) {
-    return typeof value === 'boolean';
-  },
-  date(value: any) {
-    return value instanceof Date;
-  },
   cc(value: any) { 
     return this.regex(value, /^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/);
   },
@@ -124,6 +116,14 @@ const validators: Record<string, (value: any, ...args: any[]) => boolean> = {
   },
   url(value: any) { 
     return this.regex(value,/^(http|https|ftp):\/\/([A-Z0-9][A-Z0-9_-]*(?:.[A-Z0-9][A-Z0-9_-]*)+):?(d+)?\/?/i);
+  },
+  string(value: any) {
+    return typeof value === 'string';
+  },
+  object(value: any) {
+    return value !== null 
+      && !Array.isArray(value) 
+      && value.constructor === 'Object';
   },
   array(values: any[], validator: string, ...args: any[]) {
     return values.every(value => validators[validator].apply(validators, [value, ...args]));

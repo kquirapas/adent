@@ -1,4 +1,4 @@
-plugin "dent" {
+plugin "adent-exma" {
   lang "ts"
   engine "postgres"
   url "env(DATABASE_URL)"

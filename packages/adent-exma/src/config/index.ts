@@ -24,18 +24,19 @@ export type FieldMethod = 'active'
 
 // These are the possible validators that can be defined 
 // in schema.exma ie. `@is.required`
-export type ValidatorMethod = 'eq'
-  | 'ne'       | 'notempty' | 'option'
-  | 'required' | 'regex'    | 'date'
-  | 'datetime' | 'time'     | 'future'
-  | 'past'     | 'present'  | 'gt'
-  | 'ge'       | 'lt'       | 'le'
-  | 'float'    | 'integer'  | 'number'
-  | 'price'    | 'ceq'      | 'cgt'
-  | 'cge'      | 'clt'      | 'cle'
-  | 'wgt'      | 'wge'      | 'wlt'
-  | 'wle'      | 'cc'       | 'email'
-  | 'hex'      | 'color'    | 'url';
+export type ValidatorMethod = 'required'
+  | 'notempty' | 'eq'      | 'ne'
+  | 'option'   | 'regex'   | 'date'
+  | 'future'   | 'past'    | 'present'
+  | 'number'   | 'float'   | 'price'
+  | 'integer'  | 'boolean' | 'gt'
+  | 'ge'       | 'lt'      | 'le'
+  | 'ceq'      | 'cgt'     | 'cge'
+  | 'clt'      | 'cle'     | 'wgt'
+  | 'wge'      | 'wlt'     | 'wle'
+  | 'cc'       | 'email'   | 'hex'
+  | 'color'    | 'url'     | 'string'
+  | 'object'   | 'array'   | 'unique';
 
 // These are the possible formatters that can be defined
 // in schema.exma `@list.link({ target '_blank'})`
@@ -69,18 +70,12 @@ const config = {
   fields: fields as Record<string, ColumnOption>,
   formats: formats as Record<string, ColumnOption>,
   validators: [
-    'eq',     'ne',       'notempty',
-    'option', 'required', 'regex',
-    'date',   'datetime', 'time',
-    'future', 'past',     'present',
-    'gt',     'ge',       'lt',
-    'le',     'float',    'integer',
-    'number', 'price',    'ceq',
-    'cgt',    'cge',      'clt',
-    'cle',    'wgt',      'wge',
-    'wlt',    'wle',      'cc',
-    'email',  'hex',      'color',
-    'url'
+    'required', 'notempty', 'eq',      'ne',      'option', 'regex', 
+    'date',     'future',   'past',    'present', 'number', 'float', 
+    'price',    'integer',  'boolean', 'gt',      'ge',     'lt', 
+    'le',       'ceq',      'cgt',     'cge',     'clt',    'cle', 
+    'wgt',      'wge',      'wlt',     'wle',     'cc',     'email', 
+    'hex',      'color',    'url',     'string',  'object', 'array'
   ]
 };
 
