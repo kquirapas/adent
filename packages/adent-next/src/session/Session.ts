@@ -3,7 +3,7 @@ import type { JwtPayload } from 'jsonwebtoken';
 import type { PermissionList, SessionData } from '../types';
 
 import jwt from 'jsonwebtoken';
-import Exception from '../../Exception';
+import Exception from '../Exception';
 import { toErrorResponse } from '../helpers';
 
 /**

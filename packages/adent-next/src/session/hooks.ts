@@ -15,7 +15,7 @@ import SessionContext from './Context';
 //session
 import jwt from 'jsonwebtoken';
 //helpers
-import Hash from '../../Hash';
+import Hash from '../Hash';
 
 function toQuery(object: Record<string, any>, prefix?: string): string {
   var query = [];
