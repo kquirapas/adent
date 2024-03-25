@@ -121,7 +121,7 @@ export default class Column {
    * Returns true if column is indexable (filterable, searchable, or sortable)
    */
   get indexable() {
-    return this.filterable || this.searchable || this.sortable;
+    return this.searchable || this.filterable || this.spanable || this.sortable;
   }
 
   /**
@@ -176,7 +176,11 @@ export default class Column {
    * Returns the column relation, if any
    */
   get relation() {
-    const relation = this._config.attributes.relation as Record<string, any>|undefined;
+    const relation = this._config.attributes.relation as [{
+      local: string,
+      foreign: string
+    }] | undefined;
+    
     if (!relation || typeof relation[0] !== 'object') {
       return null;
     }
@@ -208,7 +212,8 @@ export default class Column {
    * Returns true if column is spanable
    */
   get spanable() {
-    return this.filterable && spanable.includes(types[this._config.type]);
+    return this._config.attributes.spannable === true 
+      && spanable.includes(types[this._config.type]);
   }
 
   /**

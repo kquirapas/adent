@@ -54,16 +54,16 @@ model Profile @label("User" "Users") {
                        @view.metadata
   
   active      Boolean  @label("Active") 
-                       @generated @default(true) @filterable
+                       @generated @active @filterable @default(true) 
                        @list.yesno @view.yesno
   
   created     DateTime @label("Created") 
-                       @generated @default("now()") @sortable
+                       @generated @created @spanable @sortable @default("now()") 
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
   
   updated     DateTime @label("Updated") 
-                       @generated @default("now()") @timestamp @sortable
+                       @generated @updated @spanable @sortable @default("now()")
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
   
@@ -121,16 +121,16 @@ model Auth {
                      @view.date("m d, Y h:iA")
   
   active    Boolean  @label("Active") 
-                     @generated @default(true) @filterable
+                     @generated @active @filterable @default(true) 
                      @list.yesno @view.yesno
   
   created   DateTime @label("Created") 
-                     @generated @default("now()") @sortable
+                     @generated @created @spanable @sortable @default("now()") 
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
   updated   DateTime @label("Updated") 
-                     @generated @default("now()") @timestamp @sortable
+                     @generated @updated @spanable @sortable @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
@@ -166,16 +166,16 @@ model Connection {
                     @view.tags
   
   active   Boolean  @label("Active") 
-                    @generated @default(true) @filterable
+                    @generated @active @filterable @default(true) 
                     @list.yesno @view.yesno
   
   created  DateTime @label("Created") 
-                    @generated @default("now()") @sortable
+                    @generated @created @spanable @sortable @default("now()") 
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
   
   updated  DateTime @label("Updated") 
-                    @generated @default("now()") @timestamp @sortable
+                    @generated @updated @spanable @sortable @default("now()")
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
 
@@ -215,16 +215,16 @@ model File {
                      @view.tags
   
   active    Boolean  @label("Active") 
-                     @generated @default(true) @filterable
+                     @generated @active @filterable @default(true) 
                      @list.yesno @view.yesno
   
   created   DateTime @label("Created") 
-                     @generated @default("now()") @sortable
+                     @generated @created @spanable @sortable @default("now()") 
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
   updated   DateTime @label("Updated") 
-                     @generated @default("now()") @timestamp @sortable
+                     @generated @updated @spanable @sortable @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
@@ -317,16 +317,16 @@ model Address {
   longitude    Float?   @label("Longitude")
   
   active       Boolean  @label("Active") 
-                        @generated @default(true) @filterable
+                        @generated @active @filterable @default(true) 
                         @list.yesno @view.yesno
   
   created      DateTime @label("Created") 
-                        @generated @default("now()") @sortable
+                        @generated @created @spanable @sortable @default("now()") 
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")
   
   updated      DateTime @label("Updated") 
-                        @generated @default("now()") @timestamp @sortable
+                        @generated @updated @spanable @sortable @default("now()")
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")
   

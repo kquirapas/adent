@@ -66,12 +66,7 @@ export default class Model extends Type {
    * Returns true if the model is restorable
    */
   get restorable() {
-    //look for an active column
-    return this.columns.some(
-      column => column.name === 'active' &&  ['boolean', 'bool'].includes(
-        column.type.toLowerCase()
-      )
-    );
+    return this.columns.some(column => column.attributes.active === true);
   }
 
   /**
@@ -89,10 +84,38 @@ export default class Model extends Type {
   }
 
   /**
+   * Returns all the sortable columns
+   */
+  get spanables() {
+    return this.columns.filter(column => column.spanable);
+  }
+
+  /**
    * Returns all the unique columns
    */
   get uniques() {
     return this.columns.filter(column => column.unique);
+  }
+
+  /**
+   * Returns the column that will be used to toggle active
+   */
+  get active() {
+    return this.columns.find(column => column.attributes.active === true);
+  }
+
+  /**
+   * Returns the column that will be stamped when created
+   */
+  get created() {
+    return this.columns.find(column => column.attributes.created === true);
+  }
+
+  /**
+   * Returns the column that will be stamped when updated
+   */
+  get updated() {
+    return this.columns.find(column => column.attributes.updated === true);
   }
 
   /**
@@ -107,7 +130,7 @@ export default class Model extends Type {
       const model = new Model(name);
       model.relations.forEach(column => {
         const relation = column.relation;
-        if (relation && relation.model === this.name) {
+        if (relation && relation.model.name === this.name) {
           related[name] = { model: Model._configs[model.name], column };
         }
       });
