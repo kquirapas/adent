@@ -38,7 +38,8 @@ export type Session = SessionData & {
   token: string
 };
 export type SearchParams = {
-  where?: Record<string, any>,
+  filter?: Record<string, string|number|boolean>,
+  span?: Record<string, (string|number|null|undefined)[]>,
   sort?: Record<string, any>,
   skip?: number,
   take?: number
