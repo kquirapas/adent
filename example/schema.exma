@@ -18,12 +18,12 @@ plugin "adent-exma" {
 
 model Profile @label("User" "Users") {
   id          String   @label("ID") 
-                       @id @default("cuid()")
+                       @id @generated @default("cuid()")
   
   name        String   @label("Name") 
                        @searchable
                        @field.text
-                       @is.required
+                       @is.required("Name is required")
                        @list.text @view.text
 
   image       String?  @label("Image") 
@@ -38,7 +38,7 @@ model Profile @label("User" "Users") {
                        @default("person") 
                        @filterable
                        @field.text
-                       @is.required
+                       @is.required("Type is required")
                        @list.lowercase @view.lowercase
   
   roles       String[] @label("Roles") 
@@ -54,16 +54,16 @@ model Profile @label("User" "Users") {
                        @view.metadata
   
   active      Boolean  @label("Active") 
-                       @default(true) @filterable
+                       @generated @default(true) @filterable
                        @list.yesno @view.yesno
   
   created     DateTime @label("Created") 
-                       @default("now()") @sortable
+                       @generated @default("now()") @sortable
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
   
   updated     DateTime @label("Updated") 
-                       @default("now()") @timestamp @sortable
+                       @generated @default("now()") @timestamp @sortable
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
   
@@ -77,59 +77,60 @@ model Profile @label("User" "Users") {
 //Auth is used to authenticate a profile and create a session.
 model Auth {
   id        String   @label("ID") 
-                     @id @default("cuid()")
+                     @id @generated @default("cuid()")
   
   profileId String   @label("Profile") 
                      @filterable 
                      @field.autocomplete("Profile" "id" "name") 
-                     @is.required
+                     @is.required("Profile is required") 
                      @list.relation("Profile" "id" "name")
                      @view.relation("Profile" "id" "name")
                      
   username  String   @label("Username")
                      @unique @searchable @filterable
                      @field.text
-                     @is.required @is.cge(5)
+                     @is.required("Username is required") 
+                     @is.cge(5 "Should more than 5 characters")
                      @list.text @view.text
   
   email     String?  @label("Email Address")
                      @unique @searchable @filterable
                      @field.email
-                     @is.email
+                     @is.email("Should be a valid email address")
                      @list.text @view.email
   
   phone     String?  @label("Phone Number")
                      @unique @searchable @filterable
                      @field.text
-                     @is.pattern("/^\+[0-9]{0,3} [0-9]+$/")
+                     @is.pattern("/^\+[0-9]{0,3} [0-9]+$/" "Should be a valid phone number")
                      @list.text @view.phone
   
   password  String   @label("Password") 
                      @field.password
-                     @is.required
+                     @is.required("Password is required")
   
   twofa     String?  @label("2FA") 
                      @field.text
   
   verified  Int      @label("Verified") 
-                     @default(0) //0=unverified, 1=email, 2=phone, 3=both
+                     @generated @default(0) //0=unverified, 1=email, 2=phone, 3=both
   
   lastLogin DateTime @label("Last Logged In") 
-                     @default("now()")
+                     @generated @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
   active    Boolean  @label("Active") 
-                     @default(true) @filterable
+                     @generated @default(true) @filterable
                      @list.yesno @view.yesno
   
   created   DateTime @label("Created") 
-                     @default("now()") @sortable
+                     @generated @default("now()") @sortable
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
   updated   DateTime @label("Updated") 
-                     @default("now()") @timestamp @sortable
+                     @generated @default("now()") @timestamp @sortable
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
@@ -146,13 +147,13 @@ model Auth {
 model Connection {
   ownerId  String   @label("Owner")
                     @id @relation("Profile" "id") 
-                    @is.required
+                    @is.required("Owner is required")
                     @list.relation("Profile" "id" "name") 
                     @view.relation("Profile" "id" "name")
   
   memberId String   @label("Member")
                     @id @relation("Profile" "id") 
-                    @is.required
+                    @is.required("Member is required")
                     @list.relation("Profile" "id" "name") 
                     @view.relation("Profile" "id" "name")
   
@@ -165,16 +166,16 @@ model Connection {
                     @view.tags
   
   active   Boolean  @label("Active") 
-                    @default(true) @filterable
+                    @generated @default(true) @filterable
                     @list.yesno @view.yesno
   
   created  DateTime @label("Created") 
-                    @default("now()") @sortable
+                    @generated @default("now()") @sortable
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
   
   updated  DateTime @label("Updated") 
-                    @default("now()") @timestamp @sortable
+                    @generated @default("now()") @timestamp @sortable
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
 
@@ -188,25 +189,25 @@ model Connection {
 model File {
   //FIELDS:
   id        String   @label("ID")
-                     @id @default("cuid()")
+                     @id @generated @default("cuid()")
   
   profileId String   @label("Profile") 
                      @filterable 
                      @field.relation("Profile" "id" "name") 
-                     @is.required
+                     @is.required("Profile is required")
                      @list.relation("Profile" "id" "name") 
                      @view.relation("Profile" "id" "name")
   
   name      String   @label("Name") 
                      @searchable
                      @field.text
-                     @is.required
+                     @is.required("Name is required")
                      @list.text @view.text
   
   url       String   @label("URL")
                      @searchable
                      @field.url
-                     @is.required
+                     @is.required("URL is required")
                      @view.link
   
   tags      String[] @label("Tags") 
@@ -214,16 +215,16 @@ model File {
                      @view.tags
   
   active    Boolean  @label("Active") 
-                     @default(true) @filterable
+                     @generated @default(true) @filterable
                      @list.yesno @view.yesno
   
   created   DateTime @label("Created") 
-                     @default("now()") @sortable
+                     @generated @default("now()") @sortable
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
   updated   DateTime @label("Updated") 
-                     @default("now()") @timestamp @sortable
+                     @generated @default("now()") @timestamp @sortable
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
@@ -235,18 +236,18 @@ model File {
 
 model Address {
   id           String   @label("ID")
-                        @id @default("cuid()")
+                        @id @generated @default("cuid()")
   
   profileId    String   @label("Profile") 
                         @filterable 
                         @field.relation("Profile" "id" "name") 
-                        @is.required
+                        @is.required("Profile is required")
                         @list.relation("Profile" "id" "name") 
                         @view.relation("Profile" "id" "name")
   
   name         String   @label("Name") 
                         @field.text
-                        @is.required
+                        @is.required("Name is required")
                         @list.text @view.text
   
   contact      String?  @label("Contact Person")
@@ -255,12 +256,12 @@ model Address {
   
   email        String?  @label("Contact Email Address") 
                         @field.email
-                        @is.email
+                        @is.email("Should be a valid email address")
                         @view.email
   
   phone        String?  @label("Contact Phone Number") 
                         @field.text
-                        @is.pattern("/^\+[0-9]{0,3} [0-9]+$/")
+                        @is.pattern("/^\+[0-9]{0,3} [0-9]+$/" "Should be a valid phone number")
                         @view.phone
   
   unit         String?  @label("Unit Number")
@@ -273,7 +274,7 @@ model Address {
   
   street       String   @label("Street Address")
                         @field.text
-                        @is.required
+                        @is.required("Street is required")
                         @list.text @view.text
   
   neighborhood String?  @label("Neighborhood")
@@ -283,7 +284,7 @@ model Address {
   city         String   @label("City")
                         @filterable
                         @field.text
-                        @is.required
+                        @is.required("City is required")
                         @list.text @view.text
   
   state        String?  @label("State")
@@ -299,13 +300,13 @@ model Address {
   country      String   @label("Country")
                         @filterable
                         @field.country
-                        @is.required
+                        @is.required("Country is required")
                         @list.text @view.text
   
   postal       String   @label("Postal Code")
                         @filterable
                         @field.text
-                        @is.required
+                        @is.required("Postal Code is required")
                         @list.text @view.text
 
   notes        String?  @label("Notes")
@@ -316,16 +317,16 @@ model Address {
   longitude    Float?   @label("Longitude")
   
   active       Boolean  @label("Active") 
-                        @default(true) @filterable
+                        @generated @default(true) @filterable
                         @list.yesno @view.yesno
   
   created      DateTime @label("Created") 
-                        @default("now()") @sortable
+                        @generated @default("now()") @sortable
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")
   
   updated      DateTime @label("Updated") 
-                        @default("now()") @timestamp @sortable
+                        @generated @default("now()") @timestamp @sortable
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")
   
