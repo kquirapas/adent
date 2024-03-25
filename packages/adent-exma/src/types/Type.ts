@@ -92,9 +92,10 @@ export default class Type {
   constructor(config: string|TypeConfig) {
     const parent = this.constructor as typeof Type;
     if (typeof config === 'string') {
+      const name = config;
       config = parent.get(config) as TypeConfig;
       if (!config) {
-        throw Exception.for(`Config "${config}" not found`);
+        throw Exception.for(`Config "${name}" not found`);
       }
     }
     this._name = config.name;
@@ -102,6 +103,7 @@ export default class Type {
     config.columns.forEach(column => {
       this._columns.push(new Column(column));
     });
+    parent._configs[config.name] = config;
   }
 
   /**

@@ -120,5 +120,5 @@ export default class Model extends Type {
    */
   get relations() {
     return this.columns.filter(column => column.relation);
-  }
+  }  
 }

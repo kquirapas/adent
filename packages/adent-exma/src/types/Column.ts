@@ -104,6 +104,13 @@ export default class Column {
   }
 
   /**
+   * Returns true if column is generated
+   */
+  get generated() {
+    return this._config.attributes.generated === true;
+  }
+
+  /**
    * Returns true if column is a primary key
    */
   get id() {
@@ -173,8 +180,7 @@ export default class Column {
     if (!relation || typeof relation[0] !== 'object') {
       return null;
     }
-
-    return { ...relation[0] };
+    return { ...relation[0], model: new Model(this.type) };
   }
 
   /**
@@ -250,6 +256,11 @@ export default class Column {
       parameters: Data[],
       message: string
     }[] = [];
+    //if column is system generated
+    if (this.generated) {
+      //then there is no need to validate
+      return validators;
+    }
     //explicit validators
     for (const name of config.validators) {
       if (!this._config.attributes[`is.${name}`]) {
@@ -257,7 +268,7 @@ export default class Column {
       }
       const flag = this._config.attributes[`is.${name}`];
       const method = name as ValidatorMethod;
-      const parameters = Array.isArray(flag) ? flag : [];
+      const parameters = Array.isArray(flag) ? Array.from(flag) : [];
       const message = parameters.pop() as string || null;
       validators.push({ 
         method, 
@@ -299,7 +310,7 @@ export default class Column {
       }
     }
     // - required
-    if (this.required) {
+    if (this.required && typeof this.default === undefined) {
       if (!validators.find(v => v.method === 'required')) {
         validators.unshift({ 
           method: 'required' as ValidatorMethod, 
