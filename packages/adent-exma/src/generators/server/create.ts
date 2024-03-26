@@ -2,7 +2,7 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
@@ -10,10 +10,7 @@ export default function generate(
   project: Location, 
   model: Model
 ) {
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(model.name);
-  const path = `${lower}/server/create.ts`;
+  const path = `${model.nameLower}/server/create.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
@@ -32,7 +29,7 @@ export default function generate(
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${capital}Model`, `${capital}CreateInput` ]
+    namedImports: [ `${model.nameTitle}Model`, `${model.nameTitle}CreateInput` ]
   });
   //import Exception from 'adent/Exception';
   source.addImportDeclaration({
@@ -71,9 +68,9 @@ export default function generate(
     ],
     statements: formatCode(`
       //check permissions
-      session.authorize(req, res, [ '${lower}-create' ]);
+      session.authorize(req, res, [ '${model.nameLower}-create' ]);
       //get data
-      const data = req.body as ${capital}CreateInput;
+      const data = req.body as ${model.nameTitle}CreateInput;
       //call action
       const response = await action(data);
       //if error
@@ -94,9 +91,9 @@ export default function generate(
     name: 'action',
     isAsync: true,
     parameters: [
-      { name: 'data', type: `${capital}CreateInput` }
+      { name: 'data', type: `${model.nameTitle}CreateInput` }
     ],
-    returnType: `Promise<ResponsePayload<${capital}Model>>`,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: formatCode(`
       //collect errors, if any
       const errors: Record<string, any> = {};
@@ -110,8 +107,16 @@ export default function generate(
             validator => validator.method !== 'required'
           ).map(validator => {
             if (validator.method === 'unique') {
-              return `if (await db.query.${camel}.findFirst({
-                where: (${camel}, { eq }) => eq(${camel}.${column.name}, data.${column.name})
+              return `if (await db.query.${model.nameCamel}.findFirst({
+                where: (${
+                  model.nameCamel
+                }, { eq }) => eq(${
+                  model.nameCamel
+                }.${
+                  column.name
+                }, data.${
+                  column.name
+                })
               })) {
                 errors.${column.name} = '${validator.message}';
               }`;
@@ -120,7 +125,13 @@ export default function generate(
               param => typeof param === 'string' ? `'${param}'` : param 
             );
             const valid = parameters.length > 0
-              ? `validators.${validator.method}(data.${column.name}, ${parameters.join(', ')})`
+              ? `validators.${
+                validator.method
+              }(data.${
+                column.name
+              }, ${
+                parameters.join(', ')
+              })`
               : `validators.${validator.method}(data.${column.name})`;
             return `if (!${valid}) {
               errors.${column.name} = '${validator.message}';
@@ -152,7 +163,7 @@ export default function generate(
         );
       }
       //action and return response
-      return await db.insert(schema.${camel}).values({
+      return await db.insert(schema.${model.nameCamel}).values({
         ${model.columns
           .filter(column => column.validators.length > 0)
           .map(column => `${column.name}: data.${column.name}`)

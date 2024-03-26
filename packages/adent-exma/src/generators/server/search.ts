@@ -2,15 +2,12 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { camelize, formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(model.name);
-  const path = `${lower}/server/search.ts`;
+  const path = `${model.nameLower}/server/search.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
@@ -34,7 +31,7 @@ export default function generate(project: Location, model: Model) {
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${capital}Extended` ]
+    namedImports: [ `${model.nameTitle}Extended` ]
   });
   //import { sql } from 'drizzle-orm';
   source.addImportDeclaration({
@@ -68,7 +65,7 @@ export default function generate(project: Location, model: Model) {
     ],
     statements: formatCode(`
       //check permissions
-      session.authorize(req, res, [ '${lower}-search' ]);
+      session.authorize(req, res, [ '${model.nameLower}-search' ]);
       //get query
       const query: SearchParams = req.query || {};
       //call action
@@ -93,14 +90,19 @@ export default function generate(project: Location, model: Model) {
     parameters: [
       { name: 'query', type: 'SearchParams' }
     ],
-    returnType: `Promise<ResponsePayload<${capital}Extended[]>>`,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Extended[]>>`,
     statements: formatCode(`
       const { filter = {}, span = {}, sort = {}, skip = 0, take = 50 } = query;
       //selectors
-      const select = db.select().from(schema.${camel}).offset(skip).limit(take);
-      const total = db.select({ total: count() }).from(schema.${camel});
+      const select = db.select().from(schema.${
+        model.nameCamel
+      }).offset(skip).limit(take);
+      const total = db.select({ total: count() }).from(schema.${
+        model.nameCamel
+      });
       //relations
       ${model.relations.map(column => {
+        const camel = camelize(column.type);
         const join = model.columns.find(
           column => column.name === column.relation?.local
             && column.multiple
@@ -109,31 +111,47 @@ export default function generate(project: Location, model: Model) {
         let second: string[] = [];
         if (foreign?.relations.length) {
           second = foreign.relations.map(column => {
-            const camel = camelize(foreign.name);
+            
             const join = foreign.columns.find(
               column => column.name === column.relation?.local
                 && column.multiple
             )? 'leftJoin': 'innerJoin';
             return `//join ${column.name}
               select.${join}(
-                schema.${camelize(column.type)}, 
-                eq(schema.${camel}.${column.relation?.local}, schema.${camelize(column.type)}.${column.relation?.foreign})
+                schema.${camel}, 
+                eq(schema.${model.nameCamel}.${
+                  column.relation?.local
+                }, schema.${camel}.${
+                  column.relation?.foreign
+                })
               );
               total.${join}(
-                schema.${camelize(column.type)}, 
-                eq(schema.${camel}.${column.relation?.local}, schema.${camelize(column.type)}.${column.relation?.foreign})
+                schema.${camel}, 
+                eq(schema.${model.nameCamel}.${
+                  column.relation?.local
+                }, schema.${camel}.${
+                  column.relation?.foreign
+                })
               );
             `;
           })
         }
         return `//join ${column.name}
           select.${join}(
-            schema.${camelize(column.type)}, 
-            eq(schema.${camel}.${column.relation?.local}, schema.${camelize(column.type)}.${column.relation?.foreign})
+            schema.${camel}, 
+            eq(schema.${model.nameCamel}.${
+              column.relation?.local
+            }, schema.${camel}.${
+              column.relation?.foreign
+            })
           );
           total.${join}(
-            schema.${camelize(column.type)}, 
-            eq(schema.${camel}.${column.relation?.local}, schema.${camelize(column.type)}.${column.relation?.foreign})
+            schema.${camel}, 
+            eq(schema.${model.nameCamel}.${
+              column.relation?.local
+            }, schema.${camel}.${
+              column.relation?.foreign
+            })
           );
           ${second.join('\n')}
         `;
@@ -144,21 +162,59 @@ export default function generate(project: Location, model: Model) {
         //filter by ${column.name}
         if (filter.${column.name}) {
           ${['Number', 'Float', 'Integer'].includes(column.type)
-            ? `where.push(eq(schema.${camel}.${column.name}, Number(filter.${column.name})));`
+            ? `where.push(eq(schema.${
+              model.nameCamel
+            }.${
+              column.name
+            }, Number(filter.${
+              column.name
+            })));`
             : column.type === 'Boolean'
-            ? `where.push(eq(schema.${camel}.${column.name}, Boolean(filter.${column.name})));`
-            : `where.push(eq(schema.${camel}.${column.name}, String(filter.${column.name})));`
+            ? `where.push(eq(schema.${
+              model.nameCamel
+            }.${
+              column.name
+            }, Boolean(filter.${
+              column.name
+            })));`
+            : `where.push(eq(schema.${
+              model.nameCamel
+            }.${
+              column.name
+            }, String(filter.${
+              column.name
+            })));`
           }
         }
       `).join('\n')}
       ${model.spanables.map(column => `
         //span by ${column.name}
         if (span.${column.name}) {
-          if (typeof span.${column.name}[0] !== 'undefined' && span.${column.name}[0] !== null) {
-            where.push(gte(schema.${camel}.${column.name}, span.${column.name}[0]));
+          if (typeof span.${
+            column.name
+          }[0] !== 'undefined' && span.${
+            column.name
+          }[0] !== null) {
+            where.push(gte(schema.${
+              model.nameCamel
+            }.${
+              column.name
+            }, span.${
+              column.name
+            }[0]));
           }
-          if (typeof span.${column.name}[1] !== 'undefined' && span.${column.name}[1] !== null) {
-            where.push(lte(schema.${camel}.${column.name}, span.${column.name}[1]));
+          if (typeof span.${
+            column.name
+          }[1] !== 'undefined' && span.${
+            column.name
+          }[1] !== null) {
+            where.push(lte(schema.${
+              model.nameCamel
+            }.${
+              column.name
+            }, span.${
+              column.name
+            }[1]));
           }
         }
       `).join('\n')}
@@ -172,8 +228,8 @@ export default function generate(project: Location, model: Model) {
       ${model.sortables.map(column => `
         //sort by ${column.name}
         if (sort.${column.name}) {
-          const up = asc(schema.${camel}.${column.name});
-          const down = desc(schema.${camel}.${column.name});
+          const up = asc(schema.${model.nameCamel}.${column.name});
+          const down = desc(schema.${model.nameCamel}.${column.name});
           orderBy.push(sort.${column.name} === 'asc' ? up : down);
         }
       `).join('\n')}

@@ -2,15 +2,12 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(model.name);
-  const path = `${lower}/server/detail.ts`;
+  const path = `${model.nameLower}/server/detail.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const ids: string[] = [];
   model.columns.forEach(column => {
@@ -35,7 +32,7 @@ export default function generate(project: Location, model: Model) {
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${capital}Extended` ]
+    namedImports: [ `${model.nameTitle}Extended` ]
   });
   //import Exception from 'adent/Exception';
   source.addImportDeclaration({
@@ -69,7 +66,7 @@ export default function generate(project: Location, model: Model) {
     ],
     statements: formatCode(`
       //check permissions
-      session.authorize(req, res, [ '${lower}-detail' ]);
+      session.authorize(req, res, [ '${model.nameLower}-detail' ]);
       //get id
       ${ids.map(id => `
         const ${id} = req.query.${id} as string;
@@ -116,24 +113,40 @@ export default function generate(project: Location, model: Model) {
     name: 'action',
     isAsync: true,
     parameters: ids.map(id => ({ name: id, type: 'string' })),
-    returnType: `Promise<ResponsePayload<${capital}Extended>>`,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Extended>>`,
     statements: Object.keys(include).length ? formatCode(`
-      return await db.query.${camel}
+      return await db.query.${model.nameCamel}
         .findFirst({
           where: ${ids.length > 1
-            ? `(${camel}, { sql }) => sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-            : `(${camel}, { eq }) => eq(${camel}.${ids[0]}, ${ids[0]})`
+            ? `(${
+              model.nameCamel
+            }, { sql }) => sql\`${
+              ids.map(id => `${id} = \${${id}}`).join(' AND ')
+            }\``
+            : `(${
+              model.nameCamel
+            }, { eq }) => eq(${
+              model.nameCamel
+            }.${ids[0]}, ${ids[0]})`
           },
           with: ${JSON.stringify(include, null, 2).replaceAll('"', '')}
         })
         .then(toResponse)
         .catch(toErrorResponse);
     `): formatCode(`
-      return await db.query.${camel}
+      return await db.query.${model.nameCamel}
         .findFirst({
           where: ${ids.length > 1
-            ? `(${camel}, { sql }) => sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-            : `(${camel}, { eq }) => eq(${camel}.${ids[0]}, ${ids[0]})`
+            ? `(${
+              model.nameCamel
+            }, { sql }) => sql\`${
+              ids.map(id => `${id} = \${${id}}`).join(' AND ')
+            }\``
+            : `(${
+              model.nameCamel
+            }, { eq }) => eq(${
+              model.nameCamel}.${ids[0]}, ${ids[0]
+            })`
           }
         })
         .then(toResponse)

@@ -3,6 +3,8 @@ import type { Data, TypeConfig } from 'exma';
 import { Exception } from 'exma';
 import Column from './Column';
 
+import { camelize, capitalize } from '../helpers';
+
 export default class Type {
   /**
    * A cached list of all schemas
@@ -68,6 +70,27 @@ export default class Type {
    */
   get name() {
     return this._name;
+  }
+
+  /**
+   * Returns the camel cased column name
+   */
+  get nameCamel() {
+    return camelize(this._name);
+  }
+
+  /**
+   * Returns the lower cased column name
+   */
+  get nameLower() {
+    return this._name.toLocaleLowerCase();
+  }
+
+  /**
+   * Returns the capitalized column name
+   */
+  get nameTitle() {
+    return capitalize(this._name);
   }
 
   /**

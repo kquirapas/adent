@@ -4,7 +4,7 @@ import type Model from '../../types/Model';
 import type Column from '../../types/Column';
 //helpers
 import { VariableDeclarationKind } from 'ts-morph';
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { camelize, formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 type Method = { name: string, args: string[] };
@@ -189,7 +189,11 @@ function attr(column: Column, relations: Relations) {
 
   if (relations[column.name]) {
     attributes.push({ name: 'references', args: [
-      `() => ${relations[column.name].foreignTable}.${relations[column.name].foreignId}`
+      `() => ${
+        relations[column.name].foreignTable
+      }.${
+        relations[column.name].foreignId
+      }`
     ] });
   }
   return attributes;
@@ -372,7 +376,10 @@ function getSqliteColumn(column: Column, relations: Relations) {
   } else if (type === 'number') {
     const { decimalLength } = numdata(column);
     if (column.type === 'Boolean') {
-    method = { name: 'integer', args: [ `'${column.name}'`, "{ mode: 'boolean' }" ] };
+      method = { 
+        name: 'integer', 
+        args: [ `'${column.name}'`, "{ mode: 'boolean' }" ] 
+      };
     } else if (column.type === 'Float' || decimalLength > 0) {
       method = { name: 'real', args: [ `'${column.name}'` ] };
     } else {
@@ -383,11 +390,12 @@ function getSqliteColumn(column: Column, relations: Relations) {
   return [ method, ...attr(column, relations) ];
 }
 
-export default function generate(project: Location, engine: string, model: Model) {
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(camel);
-  const path = `${lower}/server/schema.ts`;
+export default function generate(
+  project: Location, 
+  engine: string, 
+  model: Model
+) {
+  const path = `${model.nameLower}/server/schema.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
 
   const relations: Relations = Object.fromEntries(model.relations.map(column => {
@@ -426,10 +434,22 @@ export default function generate(project: Location, engine: string, model: Model
   const indexes = model.columns.map(column => {
     if (column.unique) {
       if (!methods.includes('uniqueIndex')) methods.push('uniqueIndex');
-      return `${column.name}Index: uniqueIndex('${column.name}_idx').on(${camel}.${column.name})`;
+      return `${
+        column.name
+      }Index: uniqueIndex('${
+        column.name
+      }_idx').on(${
+        model.nameCamel
+      }.${column.name})`;
     } else if (column.indexable) {
       if (!methods.includes('index')) methods.push('index');
-      return `${column.name}Index: index('${column.name}_idx').on(${camel}.${column.name})`;
+      return `${
+        column.name
+      }Index: index('${
+        column.name
+      }_idx').on(${
+        model.nameCamel
+      }.${column.name})`;
     }
     return false;
   }).filter(Boolean) as string[];
@@ -443,7 +463,9 @@ export default function generate(project: Location, engine: string, model: Model
   }
 
   //import { pgTable as table, integer, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+  //...or...
   //import { mysqlTable as table, int as integer, mysqlEnum, uniqueIndex, varchar, serial } from 'drizzle-orm/mysql-core';
+  //...or...
   //import { sqliteTable as table, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
   if (['neon', 'xata', 'postgres', 'pg', 'vercel'].includes(engine)) {
     source.addImportDeclaration({
@@ -500,10 +522,10 @@ export default function generate(project: Location, engine: string, model: Model
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
-      name: camel,
-      initializer: formatCode(`table('${capital}', {
+      name: model.nameCamel,
+      initializer: formatCode(`table('${model.nameTitle}', {
         ${columns.join(',\n        ')}
-      }, ${camel} => ({
+      }, ${model.nameCamel} => ({
         ${indexes.join(',\n        ')}
       }))`),
     }],
@@ -512,6 +534,6 @@ export default function generate(project: Location, engine: string, model: Model
   //export default auth;
   source.addExportAssignment({
     isExportEquals: false,
-    expression: camel
+    expression: model.nameCamel
   });
 };

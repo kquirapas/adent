@@ -2,15 +2,12 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(model.name);
-  const path = `${lower}/server/update.ts`;
+  const path = `${model.nameLower}/server/update.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const ids: string[] = [];
   model.columns.forEach(column => {
@@ -35,7 +32,7 @@ export default function generate(project: Location, model: Model) {
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${capital}Model`, `${capital}UpdateInput` ]
+    namedImports: [ `${model.nameTitle}Model`, `${model.nameTitle}UpdateInput` ]
   });
   //import { sql, eq } from 'drizzle-orm';
   source.addImportDeclaration({
@@ -79,9 +76,9 @@ export default function generate(project: Location, model: Model) {
     ],
     statements: formatCode(`
       //check permissions
-      session.authorize(req, res, [ '${lower}-update' ]);
+      session.authorize(req, res, [ '${model.nameLower}-update' ]);
       //get data
-      const data = req.body as ${capital}UpdateInput;
+      const data = req.body as ${model.nameTitle}UpdateInput;
       //get id
       ${ids.map(id => `
         const ${id} = req.query.${id} as string;
@@ -115,9 +112,9 @@ export default function generate(project: Location, model: Model) {
     isAsync: true,
     parameters: [
       ...ids.map(id => ({ name: id, type: 'string' })),
-      { name: 'data', type: `${capital}UpdateInput` }
+      { name: 'data', type: `${model.nameTitle}UpdateInput` }
     ],
-    returnType: `Promise<ResponsePayload<${capital}Model>>`,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: formatCode(`
       //collect errors, if any
       const errors: Record<string, any> = {};
@@ -128,8 +125,16 @@ export default function generate(project: Location, model: Model) {
             validator => validator.method !== 'required'
           ).map(validator => {
             if (validator.method === 'unique') {
-              return `if (await db.query.${camel}.findFirst({
-                where: (${camel}, { eq }) => eq(${camel}.${column.name}, data.${column.name})
+              return `if (await db.query.${model.nameCamel}.findFirst({
+                where: (${
+                  model.nameCamel
+                }, { eq }) => eq(${
+                  model.nameCamel
+                }.${
+                  column.name
+                }, data.${
+                  column.name
+                })
               })) {
                 errors.${column.name} = '${validator.message}';
               }`;
@@ -138,8 +143,13 @@ export default function generate(project: Location, model: Model) {
               param => typeof param === 'string' ? `'${param}'` : param 
             );
             const valid = parameters.length > 0
-              ? `validators.${validator.method}(data.${column.name}, ${parameters.join(', ')})`
-              : `validators.${validator.method}(data.${column.name})`;
+              ? `validators.${
+                validator.method}(data.${
+                  column.name
+                }, ${parameters.join(', ')})`
+              : `validators.${
+                validator.method
+              }(data.${column.name})`;
             return `if (!${valid}) {
               errors.${column.name} = '${validator.message}';
             }`;  
@@ -162,7 +172,7 @@ export default function generate(project: Location, model: Model) {
         );
       }
       //action and return response
-      return await db.update(schema.${camel})
+      return await db.update(schema.${model.nameCamel})
         .set({
           ${model.columns
             .filter(column => column.validators.length > 0)
@@ -172,7 +182,7 @@ export default function generate(project: Location, model: Model) {
         })
         .where(${ids.length > 1
           ? `sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-          : `eq(schema.${camel}.${ids[0]}, ${ids[0]})`
+          : `eq(schema.${model.nameCamel}.${ids[0]}, ${ids[0]})`
         })
         .returning()
         .then(toResponse)

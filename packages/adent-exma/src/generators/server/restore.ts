@@ -2,7 +2,7 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
@@ -10,10 +10,7 @@ export default function generate(project: Location, model: Model) {
   if (!model.restorable) {
     return;
   }
-  const lower = model.name.toLowerCase();
-  const camel = camelize(model.name);
-  const capital = capitalize(model.name);
-  const path = `${lower}/server/restore.ts`;
+  const path = `${model.nameLower}/server/restore.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const ids: string[] = [];
   model.columns.forEach(column => {
@@ -38,7 +35,7 @@ export default function generate(project: Location, model: Model) {
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${capital}Model` ]
+    namedImports: [ `${model.nameTitle}Model` ]
   });
   //import { sql, eq } from 'drizzle-orm';
   source.addImportDeclaration({
@@ -77,7 +74,7 @@ export default function generate(project: Location, model: Model) {
     ],
     statements: formatCode(`
       //check permissions
-      session.authorize(req, res, [ '${lower}-restore' ]);
+      session.authorize(req, res, [ '${model.nameLower}-restore' ]);
       //get id
       ${ids.map(id => `
         const ${id} = req.query.${id} as string;
@@ -108,13 +105,13 @@ export default function generate(project: Location, model: Model) {
     name: 'action',
     isAsync: true,
     parameters: ids.map(id => ({ name: id, type: 'string' })),
-    returnType: `Promise<ResponsePayload<${capital}Model>>`,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: formatCode(`
-      return await db.update(schema.${camel})
+      return await db.update(schema.${model.nameCamel})
         .set({ ${model.active?.name}: true })
         .where(${ids.length > 1
           ? `sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-          : `eq(schema.${camel}.${ids[0]}, ${ids[0]})`
+          : `eq(schema.${model.nameCamel}.${ids[0]}, ${ids[0]})`
         })
         .returning()
         .then(toResponse)
