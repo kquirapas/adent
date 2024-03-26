@@ -6,15 +6,26 @@ import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
+//schema type maps
+const typemap: Record<string, string> = {
+  String: 'string',
+  Text: 'string',
+  Number: 'number',
+  Integer: 'number',
+  Float: 'number',
+  Boolean: 'boolean',
+  Date: 'string',
+  Time: 'string',
+  Datetime: 'string',
+  Json: 'string',
+  Object: 'string',
+  Hash: 'string'
+};
+
 export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/remove.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
-  const ids: string[] = [];
-  model.columns.forEach(column => {
-    if (column.id) {
-      ids.push(column.name);
-    }
-  });
+  const ids = model.ids;
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
   source.addImportDeclaration({
@@ -44,9 +55,9 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: 'adent/Exception',
     defaultImport: 'Exception'
   });
-  //import { toResponse, toErrorResponse } from 'adent/helpers';
+  //import { toResponse, toErrorResponse } from 'adent/helpers/server';
   source.addImportDeclaration({
-    moduleSpecifier: 'adent/helpers',
+    moduleSpecifier: 'adent/helpers/server',
     namedImports: [ 'toResponse', 'toErrorResponse' ]
   });
   //import { session } from '../../session';
@@ -74,8 +85,8 @@ export default function generate(project: Location, model: Model) {
       session.authorize(req, res, [ '${model.nameLower}-remove' ]);
       //get id
       ${ids.map(id => `
-        const ${id} = req.query.${id} as string;
-        if (!${id}) {
+        const ${id.name} = req.query.${id.name} as ${typemap[id.type]};
+        if (!${id.name}) {
           return res.json(
             toErrorResponse(
               Exception.for('Not Found').withCode(404)
@@ -84,7 +95,7 @@ export default function generate(project: Location, model: Model) {
         }
       `).join('\n')}
       //call action
-      const response = await action(${ids.join(', ')});
+      const response = await action(${ids.map(id => id.name).join(', ')});
       //if error
       if (response.error) {
         //update status
@@ -101,14 +112,14 @@ export default function generate(project: Location, model: Model) {
     isExported: true,
     name: 'action',
     isAsync: true,
-    parameters: ids.map(id => ({ name: id, type: 'string' })),
+    parameters: ids.map(id => ({ name: id.name, type: typemap[id.type] })),
     returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: model.active ? formatCode(`
       return await db.update(schema.${model.nameCamel})
         .set({ ${model.active.name}: false })
         .where(${ids.length > 1
-          ? `sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-          : `eq(schema.${model.nameCamel}.${ids[0]}, ${ids[0]})`
+          ? `sql\`${ids.map(id => `${id.name} = \${${id.name}}`).join(' AND ')}\``
+          : `eq(schema.${model.nameCamel}.${ids[0].name}, ${ids[0].name})`
         })
         .returning()
         .then(toResponse)
@@ -116,8 +127,8 @@ export default function generate(project: Location, model: Model) {
     `) : formatCode(`
       return await db.delete(schema.${model.nameCamel})
         .where(${ids.length > 1
-          ? `sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
-          : `eq(schema.${model.nameCamel}.${ids[0]}, ${ids[0]})`
+          ? `sql\`${ids.map(id => `${id.name} = \${${id.name}}`).join(' AND ')}\``
+          : `eq(schema.${model.nameCamel}.${ids[0].name}, ${ids[0].name})`
         })
         .returning()
         .then(toResponse)

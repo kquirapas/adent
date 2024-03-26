@@ -6,12 +6,46 @@ import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
-export default function generate(
-  project: Location, 
-  model: Model
-) {
+//schema type maps
+const typemap: Record<string, string> = {
+  String: 'string',
+  Text: 'string',
+  Number: 'number',
+  Integer: 'number',
+  Float: 'number',
+  Boolean: 'boolean',
+  Date: 'string',
+  Time: 'string',
+  Datetime: 'string',
+  Json: 'string',
+  Object: 'string',
+  Hash: 'string'
+};
+
+const helpmap: Record<string, string> = {
+  String: 'toSqlString',
+  Text: 'toSqlString',
+  Number: 'toSqlFloat',
+  Integer: 'toSqlInteger',
+  Float: 'toSqlFloat',
+  Boolean: 'toSqlBoolean',
+  Date: 'toSqlDate',
+  Time: 'toSqlDate',
+  Datetime: 'toSqlDate',
+  Json: 'toSqlString',
+  Object: 'toSqlString',
+  Hash: 'toSqlString'
+};
+
+export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/create.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
+  const inputs = model.columns.filter(column => !column.generated);
+  const checkers = inputs.filter(column => column.validators.length > 0);
+  const helpers = inputs
+    .filter(column => !!helpmap[column.type])
+    .map(column => helpmap[column.type])
+    .filter((value, index, self) => self.indexOf(value) === index);
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
   source.addImportDeclaration({
@@ -41,10 +75,10 @@ export default function generate(
     moduleSpecifier: 'adent/validators',
     defaultImport: 'validators'
   });
-  //import { toResponse, toErrorResponse } from 'adent/helpers';
+  //import { toResponse, toErrorResponse } from 'adent/helpers/server';
   source.addImportDeclaration({
-    moduleSpecifier: 'adent/helpers',
-    namedImports: [ 'toResponse', 'toErrorResponse' ]
+    moduleSpecifier: 'adent/helpers/server',
+    namedImports: [ ...helpers, 'toResponse', 'toErrorResponse' ]
   });
   //import { session } from '../../session';
   source.addImportDeclaration({
@@ -97,61 +131,61 @@ export default function generate(
     statements: formatCode(`
       //collect errors, if any
       const errors: Record<string, any> = {};
-      ${model.columns
-        .filter(column => column.validators.length > 0)
-        .map(column => {
-          const required = column.validators.find(
-            validator => validator.method === 'required'
-          );
-          const optional = column.validators.filter(
-            validator => validator.method !== 'required'
-          ).map(validator => {
-            if (validator.method === 'unique') {
-              return `if (await db.query.${model.nameCamel}.findFirst({
-                where: (${
-                  model.nameCamel
-                }, { eq }) => eq(${
-                  model.nameCamel
-                }.${
-                  column.name
-                }, data.${
-                  column.name
-                })
-              })) {
-                errors.${column.name} = '${validator.message}';
-              }`;
-            }
-            const parameters = validator.parameters.map(
-              param => typeof param === 'string' ? `'${param}'` : param 
-            );
-            const valid = parameters.length > 0
-              ? `validators.${
-                validator.method
-              }(data.${
+      ${checkers.map(column => {
+        const type = typemap[column.type];
+        const helper = helpmap[column.type];
+        const value = helper 
+          ? `${helper}<${type}>(data.${column.name}, true)`
+          : `data.${column.name}`;
+        const required = column.validators.find(
+          validator => validator.method === 'required'
+        );
+        const optional = column.validators.filter(
+          validator => validator.method !== 'required'
+        ).map(validator => {
+          if (validator.method === 'unique') {
+            return `if (await db.query.${model.nameCamel}.findFirst({
+              where: (${
+                model.nameCamel
+              }, { eq }) => eq(${
+                model.nameCamel
+              }.${
                 column.name
-              }, ${
-                parameters.join(', ')
-              })`
-              : `validators.${validator.method}(data.${column.name})`;
-            return `if (!${valid}) {
+              }, ${value})
+            })) {
               errors.${column.name} = '${validator.message}';
-            }`;  
-          });
-          //see if required
-          if (required) {
-            optional.unshift(`//check ${column.name}
-            if (!validators.required(data.${column.name})) {
-              errors.${column.name} = '${required.message}';
-            }`);
-            return optional.join(' else ');
+            }`;
           }
-          return `//check ${column.name}
-            if (typeof data.${column.name} !== 'undefined') {
-              ${optional.join(' else ')}
-            }
-          `;
-        }).join('\n')
-      }
+          const parameters = validator.parameters.map(
+            param => typeof param === 'string' ? `'${param}'` : param 
+          );
+          const valid = parameters.length > 0
+            ? `validators.${
+              validator.method
+            }(data.${
+              column.name
+            }, ${
+              parameters.join(', ')
+            })`
+            : `validators.${validator.method}(data.${column.name})`;
+          return `if (!${valid}) {
+            errors.${column.name} = '${validator.message}';
+          }`;  
+        });
+        //see if required
+        if (required) {
+          optional.unshift(`//check ${column.name}
+          if (!validators.required(data.${column.name})) {
+            errors.${column.name} = '${required.message}';
+          }`);
+          return optional.join(' else ');
+        }
+        return `//check ${column.name}
+          if (typeof data.${column.name} !== 'undefined') {
+            ${optional.join(' else ')}
+          }
+        `;
+      }).join('\n')}
       //if there were errors
       if (Object.keys(errors).length) {
         //return the errors
@@ -164,11 +198,12 @@ export default function generate(
       }
       //action and return response
       return await db.insert(schema.${model.nameCamel}).values({
-        ${model.columns
-          .filter(column => column.validators.length > 0)
-          .map(column => `${column.name}: data.${column.name}`)
-          .join(',\n')
-        }
+        ${checkers.map(column => {
+          const helper = helpmap[column.type];
+          return helper 
+            ? `${column.name}: ${helper}(data.${column.name})`
+            : `${column.name}: data.${column.name}`;
+        }).join(',\n')}
       })
       .then(toResponse)
       .catch(toErrorResponse);

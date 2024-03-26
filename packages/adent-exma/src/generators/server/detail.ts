@@ -39,9 +39,9 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: 'adent/Exception',
     defaultImport: 'Exception'
   });
-  //import { toResponse, toErrorResponse } from 'adent/helpers';
+  //import { toResponse, toErrorResponse } from 'adent/helpers/server';
   source.addImportDeclaration({
-    moduleSpecifier: 'adent/helpers',
+    moduleSpecifier: 'adent/helpers/server',
     namedImports: [ 'toResponse', 'toErrorResponse' ]
   });
   //import { session } from '../../session';

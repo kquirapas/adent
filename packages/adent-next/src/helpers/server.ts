@@ -39,21 +39,47 @@ export function toResponse(results: any, total?: number): ResponsePayload {
 /**
  * Formats an inputted value to an acceptable SQL string
  */
-export function toSqlString(value: any): string {
-  return value.toString();
+export function toSqlString<
+  Strict = string|null|undefined
+>(value: any, strict = false): Strict {
+  if (typeof value === 'undefined') {
+    return (strict ? '': undefined) as Strict;
+  } else if (value === null) {
+    return (strict ? '': null) as Strict;
+  } else if (typeof value === 'object') {
+    return JSON.stringify(value) as Strict;
+  }
+  return value.toString() as Strict;
 }
 
 /**
  * Formats an inputted value to an acceptable SQL boolean
  */
-export function toSqlBoolean(value: any) {
-  return Boolean(value);
+export function toSqlBoolean<
+  Strict = boolean|null|undefined
+>(value: any, strict = false): Strict {
+  if (typeof value === 'undefined') {
+    return (strict ? false: undefined) as Strict;
+  } else if (value === null) {
+    return (strict ? false: null) as Strict;
+  }
+  return Boolean(value) as Strict;
 }
 
 /**
  * Formats an inputted value to an acceptable SQL date string
  */
-export function toSqlDate(value: any) {
+export function toSqlDate<
+  Strict = string|null|undefined
+>(value: any, strict = false): Strict {
+  if (!strict) {
+    if (typeof value === 'undefined') {
+      return undefined as Strict;
+    } else if (value === null) {
+      return null as Strict;
+    }
+  }
+  
   let date = value instanceof Date? value: new Date(value);
   //if invalid date
   if (isNaN(date.getTime())) {
@@ -72,20 +98,34 @@ export function toSqlDate(value: any) {
   return [
     `${format.year}-${format.month}-${format.day}`,
     `${format.hour}:${format.min}:${format.sec}`
-  ].join(' ');
+  ].join(' ') as Strict;
 }
 
 /**
  * Formats an inputted value to an acceptable SQL integer
  */
-export function toSqlInteger(value: any) {
-  return parseInt(value) || 0;
+export function toSqlInteger<
+  Strict = number|null|undefined
+>(value: any, strict = false): Strict {
+  if (typeof value === 'undefined') {
+    return (strict ? 0: undefined) as Strict;
+  } else if (value === null) {
+    return (strict ? 0: null) as Strict;
+  }
+  return (parseInt(value) || 0) as Strict;
 }
 
 /**
  * Formats an inputted value to an acceptable SQL float
  */
-export function toSqlFloat(value: any) {
-  return parseFloat(value) || 0;
+export function toSqlFloat<
+  Strict = number|null|undefined
+>(value: any, strict = false): Strict {
+  if (typeof value === 'undefined') {
+    return (strict ? 0: undefined) as Strict;
+  } else if (value === null) {
+    return (strict ? 0: null) as Strict;
+  }
+  return (parseFloat(value) || 0) as Strict;
 }
 

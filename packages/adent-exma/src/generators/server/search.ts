@@ -6,9 +6,29 @@ import { camelize, formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 
+//schema type maps
+const typemap: Record<string, string> = {
+  String: 'toSqlString',
+  Text: 'toSqlString',
+  Number: 'toSqlFloat',
+  Integer: 'toSqlInteger',
+  Float: 'toSqlFloat',
+  Boolean: 'toSqlBoolean',
+  Date: 'toSqlDate',
+  Time: 'toSqlDate',
+  Datetime: 'date',
+  Json: 'toSqlString',
+  Object: 'toSqlString',
+  Hash: 'toSqlString'
+};
+
 export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/search.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
+  const helpers = [...model.filterables, ...model.spanables ]
+    .filter(column => !!typemap[column.type])
+    .map(column => typemap[column.type])
+    .filter((value, index, self) => self.indexOf(value) === index);
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
   source.addImportDeclaration({
@@ -38,10 +58,10 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: 'drizzle-orm',
     namedImports: [ 'count', 'and', 'eq', 'lte', 'gte', 'asc', 'desc' ]
   });
-  //import { toResponse, toErrorResponse } from 'adent/helpers';
+  //import { toResponse, toErrorResponse } from 'adent/helpers/server';
   source.addImportDeclaration({
-    moduleSpecifier: 'adent/helpers',
-    namedImports: [ 'toResponse', 'toErrorResponse' ]
+    moduleSpecifier: 'adent/helpers/server',
+    namedImports: [ ...helpers, 'toResponse', 'toErrorResponse' ]
   });
   //import { session } from '../../session';
   source.addImportDeclaration({
@@ -158,66 +178,54 @@ export default function generate(project: Location, model: Model) {
       }).join('\n')}
       //filters and spans
       const where: SQL[] = [];
-      ${model.filterables.map(column => `
-        //filter by ${column.name}
-        if (filter.${column.name}) {
-          ${['Number', 'Float', 'Integer'].includes(column.type)
-            ? `where.push(eq(schema.${
+      ${model.filterables.map(column => {
+        const helper = typemap[column.type];
+        const value = helper
+          ? `${helper}(filter.${column.name})`
+          : `filter.${column.name}`;
+        return `//filter by ${column.name}
+          if (filter.${column.name}) {
+            where.push(eq(schema.${
               model.nameCamel
-            }.${
-              column.name
-            }, Number(filter.${
-              column.name
-            })));`
-            : column.type === 'Boolean'
-            ? `where.push(eq(schema.${
-              model.nameCamel
-            }.${
-              column.name
-            }, Boolean(filter.${
-              column.name
-            })));`
-            : `where.push(eq(schema.${
-              model.nameCamel
-            }.${
-              column.name
-            }, String(filter.${
-              column.name
-            })));`
+            }.${column.name}, ${value}));
           }
-        }
-      `).join('\n')}
-      ${model.spanables.map(column => `
-        //span by ${column.name}
-        if (span.${column.name}) {
-          if (typeof span.${
-            column.name
-          }[0] !== 'undefined' && span.${
-            column.name
-          }[0] !== null) {
-            where.push(gte(schema.${
-              model.nameCamel
-            }.${
+        `;
+      }).join('\n')}
+      ${model.spanables.map(column => {
+        const helper = typemap[column.type];
+        const min = helper
+          ? `${helper}(span.${column.name}[0])`
+          : `span.${column.name}[0]`;
+        const max = helper
+          ? `${helper}(span.${column.name}[1])`
+          : `span.${column.name}[1]`;
+        return `//span by ${column.name}
+          if (span.${column.name}) {
+            if (typeof span.${
               column.name
-            }, span.${
+            }[0] !== 'undefined' && span.${
               column.name
-            }[0]));
+            }[0] !== null) {
+              where.push(gte(schema.${
+                model.nameCamel
+              }.${
+                column.name
+              }, ${min}));
+            }
+            if (typeof span.${
+              column.name
+            }[1] !== 'undefined' && span.${
+              column.name
+            }[1] !== null) {
+              where.push(lte(schema.${
+                model.nameCamel
+              }.${
+                column.name
+              }, ${max}));
+            }
           }
-          if (typeof span.${
-            column.name
-          }[1] !== 'undefined' && span.${
-            column.name
-          }[1] !== null) {
-            where.push(lte(schema.${
-              model.nameCamel
-            }.${
-              column.name
-            }, span.${
-              column.name
-            }[1]));
-          }
-        }
-      `).join('\n')}
+        `;
+      }).join('\n')}
 
       if (where.length > 0) {
         select.where(and(...where));
