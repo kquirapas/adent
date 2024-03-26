@@ -4,45 +4,45 @@
     "attributes": {}
   },
   "lower": {
-    "component": "FormatText",
+    "component": "Text",
     "attributes": {
       "format": "lowercase"
     }
   },
   "upper": {
-    "component": "FormatText",
+    "component": "Text",
     "attributes": {
       "format": "uppercase"
     }
   },
   "capital": {
-    "component": "FormatText",
+    "component": "Text",
     "attributes": {
       "format": "capitalize"
     }
   },
   "char": {
-    "component": "FormatOverflow",
+    "component": "Overflow",
     "attributes": {
       "hellip": true
     }
   },
   "word": {
-    "component": "FormatOverflow",
+    "component": "Overflow",
     "attributes": {
       "word": true,
       "hellip": true
     }
   },
   "number": {
-    "component": "FormatNumber",
+    "component": "Number",
     "attributes": {
       "separator": ",",
       "decimal": "."
     }
   },
   "price": {
-    "component": "FormatNumber",
+    "component": "Number",
     "attributes": {
       "decimals": 2,
       "separator": ",",
@@ -50,34 +50,34 @@
     }
   },
   "yesno": {
-    "component": "FormatYesno",
+    "component": "Yesno",
     "attributes": {
       "yes": "Yes",
       "no": "No"
     }
   },
   "rating": {
-    "component": "FormatRating",
+    "component": "Rating",
     "attributes": {}
   },
   "date": {
-    "component": "FormatDate",
+    "component": "Date",
     "attributes": {}
   },
   "relative": {
-    "component": "FormatDate",
+    "component": "Date",
     "attributes": {
       "format": "ago"
     }
   },
   "rel": {
-    "component": "FormatDate",
+    "component": "Date",
     "attributes": {
       "format": "a"
     }
   },
   "html": {
-    "component": "FormatHTML",
+    "component": "HTML",
     "attributes": {}
   },
   "escaped": {
@@ -85,75 +85,75 @@
     "attributes": {}
   },
   "markdown": {
-    "component": "FormatMarkdown",
+    "component": "Markdown",
     "attributes": {}
   },
   "color": {
-    "component": "FormatColor",
+    "component": "Color",
     "attributes": {}
   },
   "link": {
-    "component": "FormatLink",
+    "component": "Link",
     "attributes": {}
   },
   "image": {
-    "component": "FormatImage",
+    "component": "Image",
     "attributes": {}
   },
   "email": {
-    "component": "FormatEmail",
+    "component": "Email",
     "attributes": {}
   },
   "phone": {
-    "component": "FormatPhone",
+    "component": "Phone",
     "attributes": {}
   },
   "space": {
-    "component": "FormatSeparated",
+    "component": "Separated",
     "attributes": {
       "separator": " "
     }
   },
   "comma": {
-    "component": "FormatSeparated",
+    "component": "Separated",
     "attributes": {
       "separator": ", "
     }
   },
   "line": {
-    "component": "FormatSeparated",
+    "component": "Separated",
     "attributes": {
       "separator": "line"
     }
   },
   "ol": {
-    "component": "FormatList",
+    "component": "List",
     "attributes": {
       "ordered": true
     }
   },
   "ul": {
-    "component": "FormatList",
+    "component": "List",
     "attributes": {}
   },
   "tags": {
-    "component": "FormatTaglist",
+    "component": "Taglist",
     "attributes": {}
   },
   "metadata": {
-    "component": "FormatMetadata",
+    "component": "Metadata",
     "attributes": {}
   },
   "table": {
-    "component": "FormatTable",
+    "component": "Table",
     "attributes": {}
   },
   "carousel": {
-    "component": "FormatImagelist",
+    "component": "Imagelist",
     "attributes": {}
   },
   "pretty": {
-    "component": "FormatJSON",
+    "component": "JSON",
     "attributes": {}
   },
   "hide": {
@@ -165,7 +165,7 @@
     "attributes": {}
   },
   "formula": {
-    "component": "FormatFormula",
+    "component": "Formula",
     "attributes": {}
   }
 }

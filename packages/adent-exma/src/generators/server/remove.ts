@@ -2,25 +2,10 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
+import { typemap } from '../../config';
 import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
-
-//schema type maps
-const typemap: Record<string, string> = {
-  String: 'string',
-  Text: 'string',
-  Number: 'number',
-  Integer: 'number',
-  Float: 'number',
-  Boolean: 'boolean',
-  Date: 'string',
-  Time: 'string',
-  Datetime: 'string',
-  Json: 'string',
-  Object: 'string',
-  Hash: 'string'
-};
 
 export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/remove.ts`;
@@ -85,7 +70,7 @@ export default function generate(project: Location, model: Model) {
       session.authorize(req, res, [ '${model.nameLower}-remove' ]);
       //get id
       ${ids.map(id => `
-        const ${id.name} = req.query.${id.name} as ${typemap[id.type]};
+        const ${id.name} = req.query.${id.name} as ${typemap.type[id.type]};
         if (!${id.name}) {
           return res.json(
             toErrorResponse(
@@ -112,7 +97,7 @@ export default function generate(project: Location, model: Model) {
     isExported: true,
     name: 'action',
     isAsync: true,
-    parameters: ids.map(id => ({ name: id.name, type: typemap[id.type] })),
+    parameters: ids.map(id => ({ name: id.name, type: typemap.type[id.type] })),
     returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: model.active ? formatCode(`
       return await db.update(schema.${model.nameCamel})

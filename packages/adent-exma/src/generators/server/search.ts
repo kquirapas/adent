@@ -2,32 +2,17 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
+import { typemap } from '../../config';
 import { camelize, formatCode } from '../../helpers';
 
 type Location = Project|Directory;
-
-//schema type maps
-const typemap: Record<string, string> = {
-  String: 'toSqlString',
-  Text: 'toSqlString',
-  Number: 'toSqlFloat',
-  Integer: 'toSqlInteger',
-  Float: 'toSqlFloat',
-  Boolean: 'toSqlBoolean',
-  Date: 'toSqlDate',
-  Time: 'toSqlDate',
-  Datetime: 'date',
-  Json: 'toSqlString',
-  Object: 'toSqlString',
-  Hash: 'toSqlString'
-};
 
 export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/search.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const helpers = [...model.filterables, ...model.spanables ]
-    .filter(column => !!typemap[column.type])
-    .map(column => typemap[column.type])
+    .filter(column => !!typemap.type[column.type])
+    .map(column => typemap.type[column.type])
     .filter((value, index, self) => self.indexOf(value) === index);
 
   //import type { NextApiRequest, NextApiResponse } from 'next';
@@ -179,7 +164,7 @@ export default function generate(project: Location, model: Model) {
       //filters and spans
       const where: SQL[] = [];
       ${model.filterables.map(column => {
-        const helper = typemap[column.type];
+        const helper = typemap.helper[column.type];
         const value = helper
           ? `${helper}(filter.${column.name})`
           : `filter.${column.name}`;
@@ -192,7 +177,7 @@ export default function generate(project: Location, model: Model) {
         `;
       }).join('\n')}
       ${model.spanables.map(column => {
-        const helper = typemap[column.type];
+        const helper = typemap.helper[column.type];
         const min = helper
           ? `${helper}(span.${column.name}[0])`
           : `span.${column.name}[0]`;

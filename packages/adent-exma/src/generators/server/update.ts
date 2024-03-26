@@ -2,40 +2,10 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../types/Model';
 //helpers
+import { typemap } from '../../config';
 import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
-
-//schema type maps
-const typemap: Record<string, string> = {
-  String: 'string',
-  Text: 'string',
-  Number: 'number',
-  Integer: 'number',
-  Float: 'number',
-  Boolean: 'boolean',
-  Date: 'string',
-  Time: 'string',
-  Datetime: 'string',
-  Json: 'string',
-  Object: 'string',
-  Hash: 'string'
-};
-
-const helpmap: Record<string, string> = {
-  String: 'toSqlString',
-  Text: 'toSqlString',
-  Number: 'toSqlFloat',
-  Integer: 'toSqlInteger',
-  Float: 'toSqlFloat',
-  Boolean: 'toSqlBoolean',
-  Date: 'toSqlDate',
-  Time: 'toSqlDate',
-  Datetime: 'toSqlDate',
-  Json: 'toSqlString',
-  Object: 'toSqlString',
-  Hash: 'toSqlString'
-};
 
 export default function generate(project: Location, model: Model) {
   const path = `${model.nameLower}/server/update.ts`;
@@ -43,8 +13,8 @@ export default function generate(project: Location, model: Model) {
   const inputs = model.columns.filter(column => !column.generated);
   const checkers = inputs.filter(column => column.validators.length > 0);
   const helpers = inputs
-    .filter(column => !!helpmap[column.type])
-    .map(column => helpmap[column.type])
+    .filter(column => !!typemap.helper[column.type])
+    .map(column => typemap.helper[column.type])
     .filter((value, index, self) => self.indexOf(value) === index);
   const ids: string[] = [];
   model.columns.forEach(column => {
@@ -156,8 +126,8 @@ export default function generate(project: Location, model: Model) {
       //collect errors, if any
       const errors: Record<string, any> = {};
       ${checkers.map(column => {
-        const type = typemap[column.type];
-        const helper = helpmap[column.type];
+        const type = typemap.type[column.type];
+        const helper = typemap.helper[column.type];
         const value = helper 
           ? `${helper}<${type}>(data.${column.name}, true)`
           : `data.${column.name}`;
@@ -214,7 +184,7 @@ export default function generate(project: Location, model: Model) {
       return await db.update(schema.${model.nameCamel})
         .set({
           ${checkers.map(column => {
-            const helper = helpmap[column.type];
+            const helper = typemap.helper[column.type];
             return helper 
               ? `${column.name}: ${helper}(data.${column.name})`
               : `${column.name}: data.${column.name}`

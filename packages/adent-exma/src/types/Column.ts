@@ -8,7 +8,7 @@ import type {
 import Enum from './Enum';
 import Type from './Type';
 import Model from './Model';
-import config, { types, spanable } from '../config';
+import config, { typemap, spanable } from '../config';
 
 export type Validation = {
   method: ValidatorMethod,
@@ -24,22 +24,6 @@ export type ColumnFormat = {
   sticky?: boolean,
   method: FormatMethod,
   attributes: Record<string, any>
-};
-
-//methods to check column types
-export const typeValidators: Record<string, string> = {
-  String: 'string',
-  Text: 'string',
-  Number: 'number',
-  Integer: 'integer',
-  Float: 'float',
-  Boolean: 'boolean',
-  Date: 'date',
-  Datetime: 'date',
-  Time: 'date',
-  Json: 'object',
-  Object: 'object',
-  Hash: 'object'
 };
 
 export default class Column {
@@ -81,16 +65,18 @@ export default class Column {
       }
       const flag = this._config.attributes[`field.${name}`];
       const field = typeof flag === 'object' ? flag : {};
+      const component = config.fields[name].component
       const method = name as FieldMethod;
       const attributes = {
         ...config.fields[name].attributes,
         ...field
       };
-      return { method, attributes, config };
+      return { method, component, attributes, config };
     }
 
     return { 
       method: 'none' as FieldMethod, 
+      component: false,
       attributes: {}, 
       config: config.fields.none 
     };
@@ -143,16 +129,18 @@ export default class Column {
       const flag = this._config.attributes[`list.${name}`];
       const format = typeof flag === 'object' ? flag : {};
       const method = name as FormatMethod;
+      const component = config.formats[name].component
       const attributes = {
         ...config.formats[name].attributes,
         ...format
       };
 
-      return { method, attributes, config };
+      return { method, component, attributes, config };
     }
 
     return { 
       method: 'none' as FormatMethod, 
+      component: false,
       attributes: {}, 
       config: config.formats.none 
     };
@@ -213,7 +201,7 @@ export default class Column {
    */
   get spanable() {
     return this._config.attributes.spannable === true 
-      && spanable.includes(types[this._config.type]);
+      && spanable.includes(typemap.literal[this._config.type]);
   }
 
   /**
@@ -227,8 +215,8 @@ export default class Column {
    * Returns the column literal type
    */
   get literal() {
-    if (types[this._config.type]) {
-      return types[this._config.type];
+    if (typemap.literal[this._config.type]) {
+      return typemap.literal[this._config.type];
     }
     const options = Enum.get(this._config.type);
     if (options) {
@@ -285,19 +273,19 @@ export default class Column {
     // String, Text,    Number, Integer, 
     // Float,  Boolean, Date,   Datetime, 
     // Time,   Json,    Object, Hash
-    for (const type in typeValidators) {
+    for (const type in typemap.validator) {
       if (this.type === type) {
         if (this.multiple) {
           if (!validators.find(v => v.method === 'array')) {
             validators.unshift({ 
               method: 'array' as ValidatorMethod, 
-              parameters: [ typeValidators[type] ], 
+              parameters: [ typemap.validator[type] ], 
               message: 'Invalid format'
             });
           }
-        } else if (!validators.find(v => v.method === typeValidators[type])) {
+        } else if (!validators.find(v => v.method === typemap.validator[type])) {
           validators.unshift({ 
-            method: typeValidators[type] as ValidatorMethod, 
+            method: typemap.validator[type] as ValidatorMethod, 
             parameters: [], 
             message: 'Invalid format'
           });
@@ -339,16 +327,18 @@ export default class Column {
       const flag = this._config.attributes[`view.${name}`];
       const format = typeof flag === 'object' ? flag : {};
       const method = name as FormatMethod;
+      const component = config.formats[name].component
       const attributes = {
         ...config.formats[name].attributes,
         ...format
       };
 
-      return { method, attributes, config };
+      return { method, component, attributes, config };
     }
 
     return { 
       method: 'none' as FormatMethod, 
+      component: false,
       attributes: {}, 
       config: config.formats.none 
     };

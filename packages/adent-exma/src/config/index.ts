@@ -79,19 +79,68 @@ const config = {
   ]
 };
 
-export const types: Record<string, string> = {
-  String: 'string',
-  Number: 'number',
-  Int: 'integer',
-  Integer: 'integer',
-  Float: 'float',
-  Boolean: 'boolean',
-  Date: 'date',
-  Datetime: 'datetime',
-  Time: 'time',
-  Json: 'json',
-  Hash: 'json'
-};
+export const typemap: Record<string, Record<string, string>> = {
+  //to typescript
+  type: {
+    String: 'string',
+    Text: 'string',
+    Number: 'number',
+    Integer: 'number',
+    Float: 'number',
+    Boolean: 'boolean',
+    Date: 'string',
+    Time: 'string',
+    Datetime: 'string',
+    Json: 'string',
+    Object: 'string',
+    Hash: 'string'
+  },
+  //to validator methods
+  validator: {
+    String: 'string',
+    Text: 'string',
+    Number: 'number',
+    Integer: 'integer',
+    Float: 'float',
+    Boolean: 'boolean',
+    Date: 'date',
+    Datetime: 'date',
+    Time: 'date',
+    Json: 'object',
+    Object: 'object',
+    Hash: 'object'
+  },
+  //to literal types
+  literal: {
+    String: 'string',
+    Text: 'string',
+    Number: 'number',
+    Integer: 'integer',
+    Float: 'float',
+    Boolean: 'boolean',
+    Date: 'date',
+    Time: 'time',
+    Datetime: 'datetime',
+    Json: 'json',
+    Object: 'json',
+    Hash: 'json'
+  },
+  //to sql format methods
+  helper: {
+    String: 'toSqlString',
+    Text: 'toSqlString',
+    Number: 'toSqlFloat',
+    Integer: 'toSqlInteger',
+    Float: 'toSqlFloat',
+    Boolean: 'toSqlBoolean',
+    Date: 'toSqlDate',
+    Time: 'toSqlDate',
+    Datetime: 'toSqlDate',
+    Json: 'toSqlString',
+    Object: 'toSqlString',
+    Hash: 'toSqlString'
+  }
+}
 
 export const spanable = [ 
   'number', 'integer', 'float', 
