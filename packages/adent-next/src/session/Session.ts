@@ -4,7 +4,7 @@ import type { PermissionList, SessionData } from '../types';
 
 import jwt from 'jsonwebtoken';
 import Exception from '../Exception';
-import { toErrorResponse } from '../helpers';
+import { toErrorResponse } from '../helpers/server';
 
 /**
  * Used to get session data from tokens and check permissions
