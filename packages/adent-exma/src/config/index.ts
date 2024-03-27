@@ -79,6 +79,22 @@ const config = {
   ]
 };
 
+// integer   //mysql, sqlite, postgres
+// smallint  //mysql, postgres
+// bigint    //mysql, postgres
+// float     //mysql, postgres
+// serial    //mysql, postgres
+// char      //mysql, postgres
+// varchar   //mysql, postgres
+// text      //mysql, postgres, sqlite
+// boolean   //mysql, postgres, sqlite
+// date      //mysql, postgres
+// datetime  //mysql
+// time      //mysql, postgres
+// timestamp //mysql, postgres, sqlite
+// json      //mysql, postgres
+// enum      //mysql, postgres
+
 export const typemap: Record<string, Record<string, string>> = {
   //to typescript
   type: {
@@ -94,6 +110,21 @@ export const typemap: Record<string, Record<string, string>> = {
     Json: 'string',
     Object: 'string',
     Hash: 'string'
+  },
+  //to model
+  model: {
+    String: 'string',
+    Text: 'string',
+    Number: 'number',
+    Integer: 'number',
+    Float: 'number',
+    Boolean: 'boolean',
+    Date: 'string',
+    Time: 'string',
+    Datetime: 'string',
+    Json: 'Record<string, string|number|boolean|null>',
+    Object: 'Record<string, string|number|boolean|null>',
+    Hash: 'Record<string, string|number|boolean|null>'
   },
   //to validator methods
   validator: {
@@ -124,6 +155,48 @@ export const typemap: Record<string, Record<string, string>> = {
     Json: 'json',
     Object: 'json',
     Hash: 'json'
+  },
+  mysql: {
+    String: 'string',
+    Text: 'text',
+    Number: 'number',
+    Integer: 'number',
+    Float: 'number',
+    Boolean: 'boolean',
+    Date: 'date',
+    Datetime: 'datetime',
+    Time: 'time',
+    Json: 'json',
+    Object: 'json',
+    Hash: 'json'
+  },
+  postgres: {
+    String: 'string',
+    Text: 'text',
+    Number: 'number',
+    Integer: 'number',
+    Float: 'number',
+    Boolean: 'boolean',
+    Date: 'date',
+    Datetime: 'timestamp',
+    Time: 'time',
+    Json: 'jsonb',
+    Object: 'jsonb',
+    Hash: 'jsonb'
+  },
+  sqlite: {
+    String: 'string',
+    Text: 'string',
+    Number: 'number',
+    Integer: 'number',
+    Float: 'real',
+    Boolean: 'number',
+    Date: 'string',
+    Datetime: 'string',
+    Time: 'string',
+    Json: 'string',
+    Object: 'string',
+    Hash: 'string'
   },
   //to sql format methods
   helper: {

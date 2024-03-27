@@ -3,6 +3,7 @@ import type { Data, TypeConfig } from 'exma';
 import { Exception } from 'exma';
 import Column from './Column';
 
+import { typemap } from '../config';
 import { camelize, capitalize } from '../helpers';
 
 export default class Type {
@@ -66,6 +67,34 @@ export default class Type {
   }
 
   /**
+   * Returns all the field columns
+   */
+  get fields() {
+    return this.columns.filter(
+      column => column.field.component !== false
+    );
+  }
+
+  /**
+   * Returns all the indexable columns
+   */
+  get label() {
+    const label = this._attributes.label;
+    return !Array.isArray(label) 
+      ? [ this._name, this._name ] 
+      : label as string[];
+  }
+
+  /**
+   * Returns all the listable columns
+   */
+  get lists() {
+    return this.columns.filter(
+      column => column.list.method !== 'hide'
+    );
+  }
+
+  /**
    * Returns the schema name
    */
   get name() {
@@ -107,6 +136,15 @@ export default class Type {
   get singular() {
     const label = this.attributes.label as string[];
     return label[0] || this.name;
+  }
+
+  /**
+   * Returns all the viewable columns
+   */
+  get views() {
+    return this.columns.filter(
+      column => column.view.method !== 'hide' && !!typemap.type[column.type]
+    );
   }
 
   /**

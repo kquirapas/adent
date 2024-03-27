@@ -1,5 +1,4 @@
 import type { ModelConfig } from 'exma';
-import type Column from './Column';
 
 import Type from './Type';
 
@@ -63,6 +62,29 @@ export default class Model extends Type {
   }
 
   /**
+   * Returns all the suggested paths for this model
+   */
+  get paths(): string[] {
+    //if there are no relations
+    if (!this.relations.length) {
+      //this model should be a root path
+      return [`/${this.nameLower}`];
+    }
+
+    return this.relations.map(column => {
+      const relation = column.relation as {
+        type: number[];
+        model: Model;
+        local: string;
+        foreign: string;
+      };
+      return relation.model.paths.map(
+        (path: string) => `${path}/[${relation.local}]/${this.nameLower}`
+      );
+    }).flat();
+  }
+
+  /**
    * Returns true if the model is restorable
    */
   get restorable() {
@@ -122,20 +144,9 @@ export default class Model extends Type {
    * Returns all the models with columns related to this model
    */
   get related() {
-    const related: Record<string, { 
-      model: ModelConfig, 
-      column: Column 
-    }> = {};
-    Object.keys(Model.configs).forEach(name => {
-      const model = new Model(name);
-      model.relations.forEach(column => {
-        const relation = column.relation;
-        if (relation && relation.model.name === this.name) {
-          related[name] = { model: Model._configs[model.name], column };
-        }
-      });
-    });
-    return related;
+    return this._columns.filter(
+      column => Object.keys(Model._configs).includes(column.type)
+    );
   }
 
   /**
@@ -143,5 +154,5 @@ export default class Model extends Type {
    */
   get relations() {
     return this.columns.filter(column => column.relation);
-  }  
+  }
 }

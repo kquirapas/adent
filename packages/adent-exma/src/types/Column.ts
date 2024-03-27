@@ -161,6 +161,34 @@ export default class Column {
   }
 
   /**
+   * Returns the related column, if any
+   */
+  get related() {
+    //if no model is found
+    if (!Model.get(this.type)) {
+      return null;
+    }
+    //get model
+    const model = new Model(this.type);
+
+    const column = model.columns.find(
+      column => column.relation?.foreign === this.name
+    );
+
+    if (!column) {
+      return null;
+    }
+
+    //now, determine what kind of relation
+    const type = [ 
+      this.multiple ? 2 : this.required ? 1 : 0,
+      column.multiple ? 2 : column.required ? 1 : 0
+    ];
+
+    return { model, column, type };
+  }
+
+  /**
    * Returns the column relation, if any
    */
   get relation() {
@@ -168,11 +196,26 @@ export default class Column {
       local: string,
       foreign: string
     }] | undefined;
-    
+    //if no relation or invalid relation
     if (!relation || typeof relation[0] !== 'object') {
       return null;
     }
-    return { ...relation[0], model: new Model(this.type) };
+    //get the foreign model
+    const model = new Model(this.type);
+    //find the column that is related by the foreign key
+    const column = model.columns.find(
+      column => column.name === relation[0].foreign
+    );
+    //if no column is found
+    if (!column) {
+      return null;
+    }
+    //now, determine what kind of relation
+    const type = [ 
+      this.multiple ? 2 : this.required ? 1 : 0,
+      column.multiple ? 2 : column.required ? 1 : 0
+    ];
+    return { ...relation[0], type, model };
   }
 
   /**
