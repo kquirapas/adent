@@ -155,10 +155,8 @@ export function useFlag<Model>(config: FlagConfig) {
   const [ error, setError ] = useState<string>();
   const [ processing, process ] = useState(false);
   const [ results, setResults ] = useState<Model>();
-  const [ id, setId ] = useState<number>();
   const handlers = {
     set: {
-      id: setId,
       error: setError,
       results: setResults,
       process: process
@@ -191,7 +189,6 @@ export function useFlag<Model>(config: FlagConfig) {
   };
   return { 
     _,
-    id,
     token, 
     handlers, 
     processing, 
@@ -204,7 +201,6 @@ export function useDetail<Model>(config: FlagConfig) {
   const { method = 'get', path } = config;
   const { 
     _,
-    id,
     token, 
     handlers, 
     processing, 
@@ -217,7 +213,6 @@ export function useDetail<Model>(config: FlagConfig) {
   }, [])
   return { 
     _,
-    id,
     token, 
     handlers, 
     processing, 

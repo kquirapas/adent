@@ -1,9 +1,9 @@
 plugin "adent-exma" {
+  package "./modules"
   lang "ts"
   engine "postgres"
   url "env(DATABASE_URL)"
   seed "env(SESSION_SEED)"
-  modules "modules"
   router "pages"
   path "admin"
 }
@@ -16,7 +16,7 @@ plugin "adent-exma" {
 //why we call it profile instead of user and company indicating it's 
 //just a general information of an entity.
 
-model Profile @label("User" "Users") {
+model Profile @label("Profile" "Profiles") {
   id          String   @label("ID") 
                        @id @generated @default("cuid()")
   
@@ -57,12 +57,12 @@ model Profile @label("User" "Users") {
                        @generated @active @filterable @default(true) 
                        @list.yesno @view.yesno
   
-  created     DateTime @label("Created") 
+  created     Datetime @label("Created") 
                        @generated @created @spanable @sortable @default("now()") 
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
   
-  updated     DateTime @label("Updated") 
+  updated     Datetime @label("Updated") 
                        @generated @updated @spanable @sortable @default("now()")
                        @list.date("m d, Y h:iA") 
                        @view.date("m d, Y h:iA")
@@ -75,7 +75,7 @@ model Profile @label("User" "Users") {
 }
 
 //Auth is used to authenticate a profile and create a session.
-model Auth {
+model Auth @label("Auth" "Auths") {
   id        String   @label("ID") 
                      @id @generated @default("cuid()")
   
@@ -115,7 +115,7 @@ model Auth {
   verified  Int      @label("Verified") 
                      @generated @default(0) //0=unverified, 1=email, 2=phone, 3=both
   
-  lastLogin DateTime @label("Last Logged In") 
+  lastLogin Datetime @label("Last Logged In") 
                      @generated @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
@@ -124,12 +124,12 @@ model Auth {
                      @generated @active @filterable @default(true) 
                      @list.yesno @view.yesno
   
-  created   DateTime @label("Created") 
+  created   Datetime @label("Created") 
                      @generated @created @spanable @sortable @default("now()") 
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
-  updated   DateTime @label("Updated") 
+  updated   Datetime @label("Updated") 
                      @generated @updated @spanable @sortable @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
@@ -144,7 +144,7 @@ model Auth {
 // ie. company, network, group, organization, etc.
 // to do a company setup, make a company profile, then add members to it.
 
-model Connection {
+model Connection @label("Connection" "Connections") {
   ownerId  String   @label("Owner")
                     @id @relation("Profile" "id") 
                     @is.required("Owner is required")
@@ -169,12 +169,12 @@ model Connection {
                     @generated @active @filterable @default(true) 
                     @list.yesno @view.yesno
   
-  created  DateTime @label("Created") 
+  created  Datetime @label("Created") 
                     @generated @created @spanable @sortable @default("now()") 
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
   
-  updated  DateTime @label("Updated") 
+  updated  Datetime @label("Updated") 
                     @generated @updated @spanable @sortable @default("now()")
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
@@ -186,7 +186,7 @@ model Connection {
 //--------------------------------------------------------------------//
 // File System
 
-model File {
+model File @label("File" "Files") {
   //FIELDS:
   id        String   @label("ID")
                      @id @generated @default("cuid()")
@@ -218,12 +218,12 @@ model File {
                      @generated @active @filterable @default(true) 
                      @list.yesno @view.yesno
   
-  created   DateTime @label("Created") 
+  created   Datetime @label("Created") 
                      @generated @created @spanable @sortable @default("now()") 
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
   
-  updated   DateTime @label("Updated") 
+  updated   Datetime @label("Updated") 
                      @generated @updated @spanable @sortable @default("now()")
                      @list.date("m d, Y h:iA") 
                      @view.date("m d, Y h:iA")
@@ -234,7 +234,7 @@ model File {
 //--------------------------------------------------------------------//
 // Address System
 
-model Address {
+model Address @label("Address" "Addresses") {
   id           String   @label("ID")
                         @id @generated @default("cuid()")
   
@@ -320,12 +320,12 @@ model Address {
                         @generated @active @filterable @default(true) 
                         @list.yesno @view.yesno
   
-  created      DateTime @label("Created") 
+  created      Datetime @label("Created") 
                         @generated @created @spanable @sortable @default("now()") 
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")
   
-  updated      DateTime @label("Updated") 
+  updated      Datetime @label("Updated") 
                         @generated @updated @spanable @sortable @default("now()")
                         @list.date("m d, Y h:iA") 
                         @view.date("m d, Y h:iA")

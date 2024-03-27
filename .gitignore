@@ -134,3 +134,6 @@ dist
 example/modules
 packages/adent
 !packages/adent/packages.json
+example/pages/api
+example/pages/admin
+archives
