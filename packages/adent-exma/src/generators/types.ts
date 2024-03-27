@@ -2,39 +2,8 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../types/Model';
 //helpers
+import { typemap } from '../config';
 import { formatCode } from '../helpers';
-
-//schema type maps
-const typemap: Record<string, Record<string, string>> = {
-  //maps schema types to database types
-  store: {
-    String: 'string',
-    Text: 'string',
-    Number: 'number',
-    Integer: 'number',
-    Float: 'number',
-    Boolean: 'boolean',
-    Date: 'string',
-    Datetime: 'string',
-    Json: 'string',
-    Object: 'string',
-    Hash: 'string'
-  },
-  //maps schema types to modeled types
-  model: {
-    String: 'string',
-    Text: 'string',
-    Number: 'number',
-    Integer: 'number',
-    Float: 'number',
-    Boolean: 'boolean',
-    Date: 'Date',
-    Datetime: 'Date',
-    Json: 'Record<string, string|number|boolean|null>',
-    Object: 'Record<string, string|number|boolean|null>',
-    Hash: 'Record<string, string|number|boolean|null>'
-  }
-}
 
 type Location = Project|Directory;
 
@@ -62,13 +31,13 @@ export default function generate(project: Location, model: Model) {
     isExported: true,
     name: `${model.nameTitle}Store`,
     type: formatCode(`{
-      ${model.columns.filter(column => !!typemap.store[column.type]).map(column => (
-        `${column.name}${
-          !column.required ? '?' : ''
-        }: ${typemap.store[column.type]}${
-          column.multiple ? '[]' : ''
-        }`
-      )).join(',\n')}
+      ${model.columns
+        .filter(column => !!typemap.type[column.type])
+        .map(column => (
+          `${column.name}${
+            !column.required ? '?' : ''
+          }: ${typemap.type[column.type]}`
+        )).join(',\n')}
     }`)
   });
   //export type ProfileModel
@@ -76,8 +45,10 @@ export default function generate(project: Location, model: Model) {
     isExported: true,
     name: `${model.nameTitle}Model`,
     type: formatCode(`{
-      ${model.columns.filter(column => !!typemap.store[column.type]).map(column => (
-        `${column.name}${!column.required ? '?' : ''}: ${typemap.model[column.type]}`
+      ${model.columns.filter(column => !!typemap.model[column.type]).map(column => (
+        `${column.name}${!column.required ? '?' : ''}: ${typemap.model[column.type]}${
+          column.multiple ? '[]' : ''
+        }`
       )).join(',\n')}
     }`)
   });
@@ -120,7 +91,7 @@ export default function generate(project: Location, model: Model) {
       ${data.map(column => (
         `${column.name}${
           !column.required ? '?' : ''
-        }: ${typemap.store[column.type]}${
+        }: ${typemap.model[column.type]}${
           column.multiple ? '[]' : ''
         }`
       )).join(',\n')}
@@ -132,7 +103,7 @@ export default function generate(project: Location, model: Model) {
     name: `${model.nameTitle}UpdateInput`,
     type: formatCode(`{
       ${data.map(column => (
-        `${column.name}?: ${typemap.store[column.type]}${
+        `${column.name}?: ${typemap.model[column.type]}${
           column.multiple ? '[]' : ''
         }`
       )).join(',\n')}
