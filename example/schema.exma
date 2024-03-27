@@ -1,5 +1,5 @@
 plugin "adent-exma" {
-  package "./modules"
+  module "./modules"
   lang "ts"
   engine "postgres"
   url "env(DATABASE_URL)"
