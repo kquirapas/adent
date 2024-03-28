@@ -1,9 +1,11 @@
 //types
 import type { Project, Directory } from 'ts-morph';
+import type { ProjectSettings } from '../../types';
 import type Model from '../../types/Model';
 import type Column from '../../types/Column';
 //helpers
 import { VariableDeclarationKind } from 'ts-morph';
+import { typemap } from '../../config';
 import { camelize, formatCode } from '../../helpers';
 
 type Location = Project|Directory;
@@ -14,67 +16,6 @@ type Relations = Record<string, {
   foreignTable: string,
   foreignId: string
 }>;
-
-// integer   //mysql, sqlite, postgres
-// smallint  //mysql, postgres
-// bigint    //mysql, postgres
-// float     //mysql, postgres
-// serial    //mysql, postgres
-// char      //mysql, postgres
-// varchar   //mysql, postgres
-// text      //mysql, postgres, sqlite
-// boolean   //mysql, postgres, sqlite
-// date      //mysql, postgres
-// datetime  //mysql
-// time      //mysql, postgres
-// timestamp //mysql, postgres, sqlite
-// json      //mysql, postgres
-// enum      //mysql, postgres
-
-const defaultTypes: Record<string, Record<string, string>> = {
-  mysql: {
-    String: 'string',
-    Text: 'text',
-    Number: 'number',
-    Integer: 'number',
-    Float: 'number',
-    Boolean: 'boolean',
-    Date: 'date',
-    DateTime: 'datetime',
-    Time: 'time',
-    Json: 'json',
-    Object: 'json',
-    Hash: 'json'
-  },
-  postgres: {
-    String: 'string',
-    Text: 'text',
-    Number: 'number',
-    Integer: 'number',
-    Float: 'number',
-    Boolean: 'boolean',
-    Date: 'date',
-    DateTime: 'timestamp',
-    Time: 'time',
-    Json: 'jsonb',
-    Object: 'jsonb',
-    Hash: 'jsonb'
-  },
-  sqlite: {
-    String: 'string',
-    Text: 'string',
-    Number: 'number',
-    Integer: 'number',
-    Float: 'real',
-    Boolean: 'number',
-    Date: 'string',
-    DateTime: 'string',
-    Time: 'string',
-    Json: 'string',
-    Object: 'string',
-    Hash: 'string'
-  }
-};
 
 function clen(column: Column) {
   //if is.ceq, is.cgt, is.clt, is.cge, is.cle
@@ -218,7 +159,7 @@ function getColumn(column: Column, engine: string, relations: Relations) {
 }
 
 function getMysqlColumn(column: Column, relations: Relations) {
-  const type = defaultTypes.mysql[column.type];
+  const type = typemap.mysql[column.type];
   if (!type) {
     return [] as Method[];
   }
@@ -283,7 +224,7 @@ function getMysqlColumn(column: Column, relations: Relations) {
 }
 
 function getPostgresColumn(column: Column, relations: Relations) {
-  const type = defaultTypes.postgres[column.type];
+  const type = typemap.postgres[column.type];
   if (!type) {
     return [] as Method[];
   }
@@ -349,7 +290,7 @@ function getPostgresColumn(column: Column, relations: Relations) {
 }
 
 function getSqliteColumn(column: Column, relations: Relations) {
-  const type = defaultTypes.sqlite[column.type];
+  const type = typemap.sqlite[column.type];
   if (!type) {
     return [] as Method[];
   }
@@ -392,10 +333,11 @@ function getSqliteColumn(column: Column, relations: Relations) {
 
 export default function generate(
   project: Location, 
-  engine: string, 
+  config: ProjectSettings, 
   model: Model
 ) {
-  const path = `${model.nameLower}/server/schema.ts`;
+  const engine = config.dbengine;
+  const path = `${model.nameLower}/schema.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
 
   const relations: Relations = Object.fromEntries(model.relations.map(column => {
@@ -513,7 +455,7 @@ export default function generate(
     .filter((value, index, self) => self.indexOf(value) === index)
     .forEach(foreignTable => {
       source.addImportDeclaration({
-        moduleSpecifier: `../../${foreignTable}/server/schema`,
+        moduleSpecifier: `../${foreignTable}/schema`,
         defaultImport: foreignTable
       });
     });

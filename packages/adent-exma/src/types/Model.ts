@@ -62,26 +62,90 @@ export default class Model extends Type {
   }
 
   /**
-   * Returns all the suggested paths for this model
+   * Returns all the path meta data for this model
    */
-  get paths(): string[] {
+  get pathmeta(): { model: Model, type: string, name: string }[][] {
     //if there are no relations
     if (!this.relations.length) {
       //this model should be a root path
-      return [`/${this.nameLower}`];
+      return [[{
+        model: this,
+        type: 'model',
+        name: this.nameLower
+      }]];
     }
 
     return this.relations.map(column => {
       const relation = column.relation as {
-        type: number[];
-        model: Model;
-        local: string;
-        foreign: string;
+        name: string,
+        type: number[],
+        model: Model,
+        local: string,
+        foreign: string
       };
-      return relation.model.paths.map(
-        (path: string) => `${path}/[${relation.local}]/${this.nameLower}`
+      return relation.model.pathmeta.map(
+        meta => meta.concat([{
+          model: this,
+          type: 'id',
+          name: relation.local
+        }, {
+          model: this,
+          type: 'column',
+          name: relation.name
+        }])
       );
     }).flat();
+  }
+
+  /**
+   * Returns a method to generate paths
+   */
+  get pathset() {
+    return this.pathmeta.map(reference => {
+      //make sure we are not changing the original array
+      const paths = Array.from(reference);
+      //get the path names
+      const names = paths.map(path => path.name);
+      //add the ids that are not already in the path
+      this.ids.forEach(column => {
+        //if the column is not in the path
+        if (!names.includes(column.name)) {
+          //add it to the clone
+          paths.push({
+            model: this,
+            type: 'id',
+            name: column.name
+          });
+        }
+      });
+
+      return (key: string, toString = '[%s]') => {
+        const root = reference.map(path => path.type === 'id' 
+          ? toString.replace('%s', path.name)
+          : path.name
+        ).join('/');
+        const detail = paths.map(path => path.type === 'id' 
+          ? toString.replace('%s', path.name)
+          : path.name
+        ).join('/');
+        switch (key) {
+          case 'create':
+            return `${root}/create`;
+          case 'detail':
+            return detail;
+          case 'remove':
+            return `${detail}/remove`;
+          case 'restore':
+            return `${detail}/restore`;
+          case 'update':
+            return `${detail}/update`;
+          case 'root':
+          case 'search':
+          default:
+            return root;
+        }
+      };
+    });
   }
 
   /**
@@ -110,6 +174,19 @@ export default class Model extends Type {
    */
   get spanables() {
     return this.columns.filter(column => column.spanable);
+  }
+
+  /**
+   * Returns a function to generate a suggested label
+   */
+  get suggested() {
+    const label = this.attributes.label as string[];
+    const suggested = label[2] || this.nameLower;
+    return (template = '${data.%s}') => Array.from(
+      suggested.matchAll(/\[([a-zA-Z0-9_]+)\]/g)
+    ).reduce((result, match) => {
+      return result.replace(match[0], template.replaceAll('%s', match[1]));
+    }, suggested)
   }
 
   /**

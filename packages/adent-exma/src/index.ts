@@ -1,4 +1,5 @@
 import type { PluginProps, Data } from 'exma';
+import type { ProjectSettings } from './types';
 
 import path from 'path';
 import { Project, IndentationText } from 'ts-morph';
@@ -8,25 +9,40 @@ import Model from './types/Model';
 
 //generators
 import generateStore from './generators/store';
-import generateSession from './generators/session';
-import generateTypes from './generators/types';
-import generateServerCreate from './generators/server/create';
-import generateServerDetail from './generators/server/detail';
-import generateServerRemove from './generators/server/remove';
-import generateServerRestore from './generators/server/restore';
-import generateServerSearch from './generators/server/search';
-import generateServerSchema from './generators/server/schema';
-import generateServerUpdate from './generators/server/update';
-import generateClientForm from './generators/client/form';
-import generateClientList from './generators/client/list';
-import generateClientView from './generators/client/view';
+import generateTypes from './generators/module/types';
+import generateSchema from './generators/module/schema';
 
-const deconstructValue = (value: Data) => {
+import generateActionCreate from './generators/module/actions/create';
+import generateActionDetail from './generators/module/actions/detail';
+import generateActionRemove from './generators/module/actions/remove';
+import generateActionRestore from './generators/module/actions/restore';
+import generateActionSearch from './generators/module/actions/search';
+import generateActionUpdate from './generators/module/actions/update';
+
+import generateAPICreate from './generators/pages/api/create';
+import generateAPIDetail from './generators/pages/api/detail';
+import generateAPIRemove from './generators/pages/api/remove';
+import generateAPIRestore from './generators/pages/api/restore';
+import generateAPISearch from './generators/pages/api/search';
+import generateAPIUpdate from './generators/pages/api/update';
+
+import generateComponentForm from './generators/module/components/form';
+import generateComponentList from './generators/module/components/list';
+import generateComponentView from './generators/module/components/view';
+
+import generatePageCreate from './generators/pages/create';
+import generatePageDetail from './generators/pages/detail';
+import generatePageRemove from './generators/pages/remove';
+import generatePageRestore from './generators/pages/restore';
+import generatePageSearch from './generators/pages/search';
+import generatePageUpdate from './generators/pages/update';
+
+const deconstructValue = <T = Data>(value: Data) => {
   const string = (value || '').toString();
   const type = string.indexOf('env(') === 0 ? 'env': 'literal';
   const deconstructed = type === 'env' 
     ? string.replace('env(', '').replace(')', '')
-    : value;
+    : value as T;
   return { type, value: deconstructed };
 };
 
@@ -34,26 +50,30 @@ const deconstructValue = (value: Data) => {
  * This is the The params comes form the cli
  */
 export default function generate({ config, schema, cli }: PluginProps) {
-  if (!config.modules) {
-    return cli.terminal.error('No modules directory specified');
-  }
-  //Loader looks for . or / at the start. If it doesnt find this then 
-  //will use node_modules as the root path
-  const modules = Loader.absolute(config.modules.toString().startsWith('/') 
-    ? config.modules.toString() 
-    : config.modules.toString().startsWith('.') 
-    ? config.modules.toString() 
-    : `./${config.modules.toString()}`
-  );
-  
   if (!schema.model) {
     return cli.terminal.error('No models found in schema');
   }
-  const project = new Project({
+
+  const settings: ProjectSettings = {
+    name: '',
+    module: config.module?.toString() || './modules',
+    lang: config.lang as string || 'js',
+    dbengine: config.engine as string || 'postgres',
+    dburl: deconstructValue<string>(config.url ? config.url : 'env(DATABASE_URL)'),
+    router: config.router?.toString() || 'pages',
+    path: config.path as string || ''
+  };
+
+  //Loader looks for . or / at the start. If it doesnt find this then 
+  //will use node_modules as the root path
+  const libraryPath = Loader.absolute(settings.module);
+  settings.name = settings.module.toString().replace(/^(\.{0,2}\/{0,1})/, '');
+
+  const libraryProject = new Project({
     tsConfigFilePath: path.resolve(__dirname, '../tsconfig.json'),
     skipAddingFilesFromTsConfig: true,
     compilerOptions: {
-      outDir: modules,
+      outDir: libraryPath,
       declaration: true, // Generates corresponding '.d.ts' file.
       declarationMap: true, // Generates a sourcemap for each corresponding '.d.ts' file.
       sourceMap: true, // Generates corresponding '.map' file.
@@ -62,41 +82,84 @@ export default function generate({ config, schema, cli }: PluginProps) {
       indentationText: IndentationText.TwoSpaces
     }
   });
+  const libraryFolder = libraryProject.createDirectory(libraryPath);
+  
+  const routerPath = path.join(process.cwd(), settings.router, settings.path);
+  const routerProject = new Project({
+    tsConfigFilePath: path.resolve(__dirname, '../tsconfig.json'),
+    skipAddingFilesFromTsConfig: true,
+    compilerOptions: {
+      outDir: routerPath,
+      declaration: true, // Generates corresponding '.d.ts' file.
+      declarationMap: true, // Generates a sourcemap for each corresponding '.d.ts' file.
+      sourceMap: true, // Generates corresponding '.map' file.
+    },
+    manipulationSettings: {
+      indentationText: IndentationText.TwoSpaces
+    }
+  });
+  const routerFolder = routerProject.createDirectory(routerPath);
 
-  const models = schema.model;
-  const engine = config.engine as string || 'postgres';
-  const directory = project.createDirectory(modules);
-  const storeError = generateStore(directory, models, {
-    engine: deconstructValue(engine),
-    url: deconstructValue(config.url),
+  const apiPath = path.join(process.cwd(), settings.router, 'api');
+  const apiProject = new Project({
+    tsConfigFilePath: path.resolve(__dirname, '../tsconfig.json'),
+    skipAddingFilesFromTsConfig: true,
+    compilerOptions: {
+      outDir: apiPath,
+      declaration: true, // Generates corresponding '.d.ts' file.
+      declarationMap: true, // Generates a sourcemap for each corresponding '.d.ts' file.
+      sourceMap: true, // Generates corresponding '.map' file.
+    },
+    manipulationSettings: {
+      indentationText: IndentationText.TwoSpaces
+    }
   });
-  generateSession(directory, {
-    seed: deconstructValue(config.seed),
-  });
+  const apiFolder = apiProject.createDirectory(apiPath);
+  
+  const storeError = generateStore(libraryFolder, schema.model, settings);
   if (storeError instanceof Error) {
     return cli.terminal.error(storeError.message);
   }
-  for (const name in models) {
-    const model = new Model(models[name]);
-    generateTypes(directory, model);
-    generateServerSchema(directory, engine, model);
-    generateServerCreate(directory, model);
-    generateServerDetail(directory, model);
-    generateServerRemove(directory, model);
-    generateServerRestore(directory, model);
-    generateServerSearch(directory, model);
-    generateServerUpdate(directory, model);
+  for (const name in schema.model) {
+    const model = new Model(schema.model[name]);
+    generateTypes(libraryFolder, model);
+    generateSchema(libraryFolder, settings, model);
 
-    generateClientForm(directory, model);
-    generateClientList(directory, model);
-    generateClientView(directory, model);
+    generateActionCreate(libraryFolder, model);
+    generateActionDetail(libraryFolder, model);
+    generateActionRemove(libraryFolder, model);
+    generateActionRestore(libraryFolder, model);
+    generateActionSearch(libraryFolder, model);
+    generateActionUpdate(libraryFolder, model);
+
+    generateAPICreate(apiFolder, settings, model);
+    generateAPIDetail(apiFolder, settings, model);
+    generateAPIRemove(apiFolder, settings, model);
+    generateAPIRestore(apiFolder, settings, model);
+    generateAPISearch(apiFolder, settings, model);
+    generateAPIUpdate(apiFolder, settings, model);
+
+    generateComponentForm(libraryFolder, model);
+    generateComponentList(libraryFolder, model);
+    generateComponentView(libraryFolder, model);
+
+    generatePageCreate(routerFolder, settings, model);
+    generatePageDetail(routerFolder, settings, model);
+    generatePageRemove(routerFolder, settings, model);
+    generatePageRestore(routerFolder, settings, model);
+    generatePageSearch(routerFolder, settings, model);
+    generatePageUpdate(routerFolder, settings, model);
   }
 
   //if you want ts, tsx files
   if ((config.lang || 'ts') == 'ts') {
-    project.saveSync();
+    libraryProject.saveSync();
+    routerProject.saveSync();
+    apiProject.saveSync();
   //if you want js, d.ts files
   } else {
-    project.emit();
+    libraryProject.emit();
+    routerProject.emit();
+    apiProject.emit();
   }
 };

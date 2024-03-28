@@ -1,7 +1,7 @@
 //types
-import type { Data, ModelConfig } from 'exma';
+import type { ModelConfig } from 'exma';
 import type { Project, Directory, SourceFile } from 'ts-morph';
-type Config = Record<string, { type: string, value: Data}>;
+import type { ProjectSettings } from '../types';
 //helpers
 import { VariableDeclarationKind } from 'ts-morph';
 import { formatCode, camelize } from '../helpers';
@@ -11,11 +11,11 @@ type Location = Project|Directory;
 export default function generate(
   project: Location, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
   const source = project.createSourceFile('store.ts', '', { overwrite: true });
 
-  switch (config.engine.value) {
+  switch (config.dbengine) {
     case 'neon':
       return generateNeon(source, models, config);
     case 'xata':
@@ -33,7 +33,7 @@ export default function generate(
     case 'sqlite':
       return generateSqlite(source, models, config);
     default:
-      return new Error(`Unknown database engine: ${config.engine}`);
+      return new Error(`Unknown database engine: ${config.dbengine}`);
   }
 };
 
@@ -50,7 +50,7 @@ export function generateExports(
   for (const name in models) {
     source.addImportDeclaration({
       defaultImport: camelize(name),
-      moduleSpecifier: `./${camelize(name)}/server/schema`
+      moduleSpecifier: `./${camelize(name)}/schema`
     });
   }
   source.addVariableStatement({
@@ -99,9 +99,9 @@ export function generateExports(
 export function generateNeon(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
-  if (!config.url.value) {
+  if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import type { NeonQueryFunction } from "@neondatabase/serverless";
@@ -139,9 +139,9 @@ export function generateNeon(
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: `resourceGlobal.resource || ${config.url.type === 'env' 
-        ? `neon(process.env.${config.url.value} as string)`
-        : `neon('${config.url.value}')`
+      initializer: `resourceGlobal.resource || ${config.dburl.type === 'env' 
+        ? `neon(process.env.${config.dburl.value} as string)`
+        : `neon('${config.dburl.value}')`
       }`
     }]
   });
@@ -152,7 +152,7 @@ export function generateNeon(
 export function generateXata(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
   //XATA
   //import { drizzle } from 'drizzle-orm/xata-http';
@@ -194,9 +194,9 @@ export function generateXata(
 export function generatePostgres(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
-  if (!config.url.value) {
+  if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import { drizzle } from 'drizzle-orm/postgres-js';
@@ -227,9 +227,9 @@ export function generatePostgres(
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: `resourceGlobal.resource || ${config.url.type === 'env' 
-        ? `postgres(process.env.${config.url.value} as string)`
-        : `postgres('${config.url.value}')`
+      initializer: `resourceGlobal.resource || ${config.dburl.type === 'env' 
+        ? `postgres(process.env.${config.dburl.value} as string)`
+        : `postgres('${config.dburl.value}')`
       }`
     }]
   });
@@ -240,9 +240,9 @@ export function generatePostgres(
 export function generatePG(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
-  if (!config.url.value) {
+  if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import { drizzle } from "drizzle-orm/node-postgres";
@@ -282,9 +282,9 @@ export function generatePG(
       name: 'resource',
       initializer: formatCode(`resourceGlobal.resource || (() => {
         const resource = new Client({ 
-          connectionString: ${config.url.type === 'env' 
-            ? `process.env.${config.url.value} as string`
-            : `'${config.url.value}'`}
+          connectionString: ${config.dburl.type === 'env' 
+            ? `process.env.${config.dburl.value} as string`
+            : `'${config.dburl.value}'`}
         });
         resource.connect();
         return resource;
@@ -298,7 +298,7 @@ export function generatePG(
 export function generateVercel(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
   //Vercel
   //import { sql } from '@vercel/postgres';
@@ -328,9 +328,9 @@ export function generateVercel(
 export function generatePlanetScale(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
-  if (!config.url.value) {
+  if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import { drizzle } from "drizzle-orm/planetscale-serverless";
@@ -361,9 +361,9 @@ export function generatePlanetScale(
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: `resourceGlobal.resource || ${config.url.type === 'env' 
-      ? `new Client({ url: process.env.${config.url.value} as string })`
-      : `new Client({ url: '${config.url.value}' })`}`
+      initializer: `resourceGlobal.resource || ${config.dburl.type === 'env' 
+      ? `new Client({ url: process.env.${config.dburl.value} as string })`
+      : `new Client({ url: '${config.dburl.value}' })`}`
     }]
   });
   
@@ -373,9 +373,9 @@ export function generatePlanetScale(
 export function generateMysql(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
-  if (!config.url.value) {
+  if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import type { Connection } from "mysql2";
@@ -412,9 +412,9 @@ export function generateMysql(
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: `resourceGlobal.resource || ${config.url.type === 'env' 
-      ? `mysql.createConnection(process.env.${config.url.value} as string)`
-      : `mysql.createConnection('${config.url.value}')`}`
+      initializer: `resourceGlobal.resource || ${config.dburl.type === 'env' 
+      ? `mysql.createConnection(process.env.${config.dburl.value} as string)`
+      : `mysql.createConnection('${config.dburl.value}')`}`
     }]
   });
 
@@ -424,7 +424,7 @@ export function generateMysql(
 export function generateSqlite(
   source: SourceFile, 
   models: Record<string, ModelConfig>, 
-  config: Config
+  config: ProjectSettings
 ) {
   //import { drizzle } from 'drizzle-orm/libsql';
   //import Database from 'better-sqlite3';
@@ -454,9 +454,9 @@ export function generateSqlite(
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: `resourceGlobal.resource || ${config.url.type === 'env' 
-      ? `new Database(process.env.${config.url.value} as string)`
-      : `new Database('${config.url.value}')`}`
+      initializer: `resourceGlobal.resource || ${config.dburl.type === 'env' 
+      ? `new Database(process.env.${config.dburl.value} as string)`
+      : `new Database('${config.dburl.value}')`}`
     }]
   });
 

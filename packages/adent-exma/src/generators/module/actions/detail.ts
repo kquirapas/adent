@@ -1,13 +1,14 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../../types/Model';
+import type Model from '../../../types/Model';
 //helpers
-import { formatCode } from '../../helpers';
+import { typemap } from '../../../config';
+import { formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const path = `${model.nameLower}/server/detail.ts`;
+  const path = `${model.nameLower}/actions/detail.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const ids: string[] = [];
   model.columns.forEach(column => {
@@ -15,13 +16,9 @@ export default function generate(project: Location, model: Model) {
       ids.push(column.name);
     }
   });
-
-  //import type { NextApiRequest, NextApiResponse } from 'next';
-  source.addImportDeclaration({
-    isTypeOnly: true,
-    moduleSpecifier: 'next',
-    namedImports: [ 'NextApiRequest', 'NextApiResponse' ]
-  });
+  const jsons = model.columns.filter(
+    column => typemap.literal[column.type] === 'json'
+  );
   //import type { ResponsePayload } from 'adent/types';
   source.addImportDeclaration({
     isTypeOnly: true,
@@ -34,60 +31,15 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: '../types',
     namedImports: [ `${model.nameTitle}Extended` ]
   });
-  //import Exception from 'adent/Exception';
-  source.addImportDeclaration({
-    moduleSpecifier: 'adent/Exception',
-    defaultImport: 'Exception'
-  });
   //import { toResponse, toErrorResponse } from 'adent/helpers/server';
   source.addImportDeclaration({
     moduleSpecifier: 'adent/helpers/server',
     namedImports: [ 'toResponse', 'toErrorResponse' ]
   });
-  //import { session } from '../../session';
-  source.addImportDeclaration({
-    moduleSpecifier: '../../session',
-    namedImports: [ 'session' ]
-  });
   //import { db } from '../../store';
   source.addImportDeclaration({
     moduleSpecifier: '../../store',
     namedImports: [ 'db' ]
-  });
-
-  //export async function handler(req: NextApiRequest, res: NextApiResponse)
-  source.addFunction({
-    isExported: true,
-    name: 'handler',
-    isAsync: true,
-    parameters: [
-      { name: 'req', type: 'NextApiRequest' },
-      { name: 'res', type: 'NextApiResponse' }
-    ],
-    statements: formatCode(`
-      //check permissions
-      session.authorize(req, res, [ '${model.nameLower}-detail' ]);
-      //get id
-      ${ids.map(id => `
-        const ${id} = req.query.${id} as string;
-        if (!${id}) {
-          return res.json(
-            toErrorResponse(
-              Exception.for('Not Found').withCode(404)
-            )
-          );
-        }
-      `).join('\n')}
-      //call action
-      const response = await action(${ids.join(', ')});
-      //if error
-      if (response.error) {
-        //update status
-        res.status(response.code || 400);
-      }
-      //send response
-      res.json(response);
-    `)
   });
   //export async function action(
   //  id: string,
@@ -109,7 +61,7 @@ export default function generate(project: Location, model: Model) {
     ])
   );
   source.addFunction({
-    isExported: true,
+    isDefaultExport: true,
     name: 'action',
     isAsync: true,
     parameters: ids.map(id => ({ name: id, type: 'string' })),
@@ -131,6 +83,13 @@ export default function generate(project: Location, model: Model) {
           },
           with: ${JSON.stringify(include, null, 2).replaceAll('"', '')}
         })
+        ${jsons.length > 0 
+          ? `.then(results => ({
+            ...results,
+            ${jsons.map(column => `${column.name}: JSON.parse(results.${column.name})`).join(',\n')}
+          }))`
+          : ''
+        }
         .then(toResponse)
         .catch(toErrorResponse);
     `): formatCode(`

@@ -90,7 +90,7 @@ export default class Type {
    */
   get lists() {
     return this.columns.filter(
-      column => column.list.method !== 'hide'
+      column => column.list.method !== 'hide' && !!typemap.type[column.type]
     );
   }
 
@@ -162,7 +162,7 @@ export default class Type {
     this._name = config.name;
     this._attributes = config.attributes;
     config.columns.forEach(column => {
-      this._columns.push(new Column(column));
+      this._columns.push(new Column(this, column));
     });
     parent._configs[config.name] = config;
   }

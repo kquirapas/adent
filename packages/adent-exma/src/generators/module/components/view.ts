@@ -1,9 +1,9 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../../types/Model';
+import type Model from '../../../types/Model';
 //helpers
-import { typemap } from '../../config';
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { typemap } from '../../../config';
+import { capitalize, camelize, formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
 
@@ -16,7 +16,7 @@ export default function generate(project: Location, model: Model) {
     if (!field.component) return;
     //get the path where this should be saved
     const capital = capitalize(camelize(column.name));
-    const path = `${model.nameLower}/client/view/${capital}Format.tsx`;
+    const path = `${model.nameLower}/components/view/${capital}Format.tsx`;
     const source = project.createSourceFile(path, '', { overwrite: true });
 
     //import Text from 'frui-tailwind/formats/Text';
@@ -26,13 +26,13 @@ export default function generate(project: Location, model: Model) {
     });
     //export function NameFormat() {
     source.addFunction({
-      isExported: true,
+      isDefaultExport: true,
       name: `${capital}Format`,
       parameters: [
-        { name: 'props', type: `{ value: ${typemap[column.type]} }` }
+        { name: 'props', type: `{ value: ${typemap.model[column.type]}${column.multiple ? '[]': ''} }` }
       ],
       statements: formatCode(`
-        //props
+        //props ${column.type}
         const { value } = props;
         const attributes = ${JSON.stringify(field.attributes)};
         //render

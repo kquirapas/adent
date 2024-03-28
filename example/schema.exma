@@ -3,7 +3,6 @@ plugin "adent-exma" {
   lang "ts"
   engine "postgres"
   url "env(DATABASE_URL)"
-  seed "env(SESSION_SEED)"
   router "pages"
   path "admin"
 }
@@ -16,7 +15,7 @@ plugin "adent-exma" {
 //why we call it profile instead of user and company indicating it's 
 //just a general information of an entity.
 
-model Profile @label("Profile" "Profiles") {
+model Profile @label("Profile" "Profiles" "[name]") {
   id          String   @label("ID") 
                        @id @generated @default("cuid()")
   
@@ -75,7 +74,7 @@ model Profile @label("Profile" "Profiles") {
 }
 
 //Auth is used to authenticate a profile and create a session.
-model Auth @label("Auth" "Auths") {
+model Auth @label("Auth" "Auths" "[username]") {
   id        String   @label("ID") 
                      @id @generated @default("cuid()")
   
@@ -144,7 +143,7 @@ model Auth @label("Auth" "Auths") {
 // ie. company, network, group, organization, etc.
 // to do a company setup, make a company profile, then add members to it.
 
-model Connection @label("Connection" "Connections") {
+model Connection @label("Connection" "Connections" "[owner.name] - [member.name]") {
   ownerId  String   @label("Owner")
                     @id @relation("Profile" "id") 
                     @is.required("Owner is required")
@@ -179,14 +178,14 @@ model Connection @label("Connection" "Connections") {
                     @list.date("m d, Y h:iA") 
                     @view.date("m d, Y h:iA")
 
-  owner    Profile  @relation({ local "ownerId" foreign "id" })
-  member   Profile  @relation({ local "memberId" foreign "id" })
+  owner    Profile  @relation({ name "connections" local "ownerId" foreign "id" })
+  member   Profile  @relation({ name "memberships" local "memberId" foreign "id" })
 }
 
 //--------------------------------------------------------------------//
 // File System
 
-model File @label("File" "Files") {
+model File @label("File" "Files" "[name]") {
   //FIELDS:
   id        String   @label("ID")
                      @id @generated @default("cuid()")
@@ -234,7 +233,7 @@ model File @label("File" "Files") {
 //--------------------------------------------------------------------//
 // Address System
 
-model Address @label("Address" "Addresses") {
+model Address @label("Address" "Addresses" "[name]") {
   id           String   @label("ID")
                         @id @generated @default("cuid()")
   

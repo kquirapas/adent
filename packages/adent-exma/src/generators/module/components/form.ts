@@ -1,8 +1,8 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../../types/Model';
+import type Model from '../../../types/Model';
 //helpers
-import { capitalize, camelize, formatCode } from '../../helpers';
+import { capitalize, camelize, formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
 
@@ -15,7 +15,7 @@ export default function generate(project: Location, model: Model) {
     if (!field.component) return;
     //get the path where this should be saved
     const capital = capitalize(camelize(column.name));
-    const path = `${model.nameLower}/client/form/${capital}Field.tsx`;
+    const path = `${model.nameLower}/components/form/${capital}Field.tsx`;
     const source = project.createSourceFile(path, '', { overwrite: true });
     //import type { FieldProps, ControlProps } from 'adent/types';
     source.addImportDeclaration({

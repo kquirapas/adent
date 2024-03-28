@@ -1,26 +1,20 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../../types/Model';
+import type Model from '../../../types/Model';
 //helpers
-import { typemap } from '../../config';
-import { camelize, formatCode } from '../../helpers';
+import { typemap } from '../../../config';
+import { camelize, formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const path = `${model.nameLower}/server/search.ts`;
+  const path = `${model.nameLower}/actions/search.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const helpers = [...model.filterables, ...model.spanables ]
-    .filter(column => !!typemap.type[column.type])
-    .map(column => typemap.type[column.type])
+    .filter(column => !!typemap.helper[column.type])
+    .map(column => typemap.helper[column.type])
     .filter((value, index, self) => self.indexOf(value) === index);
 
-  //import type { NextApiRequest, NextApiResponse } from 'next';
-  source.addImportDeclaration({
-    isTypeOnly: true,
-    moduleSpecifier: 'next',
-    namedImports: [ 'NextApiRequest', 'NextApiResponse' ]
-  });
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: 'drizzle-orm',
@@ -48,48 +42,17 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: 'adent/helpers/server',
     namedImports: [ ...helpers, 'toResponse', 'toErrorResponse' ]
   });
-  //import { session } from '../../session';
-  source.addImportDeclaration({
-    moduleSpecifier: '../../session',
-    namedImports: [ 'session' ]
-  });
   //import { db, schema } from '../../store';
   source.addImportDeclaration({
     moduleSpecifier: '../../store',
     namedImports: [ 'db', 'schema' ]
   });
 
-  //export async function handler(req: NextApiRequest, res: NextApiResponse)
-  source.addFunction({
-    isExported: true,
-    name: 'handler',
-    isAsync: true,
-    parameters: [
-      { name: 'req', type: 'NextApiRequest' },
-      { name: 'res', type: 'NextApiResponse' }
-    ],
-    statements: formatCode(`
-      //check permissions
-      session.authorize(req, res, [ '${model.nameLower}-search' ]);
-      //get query
-      const query: SearchParams = req.query || {};
-      //call action
-      const response = await action(query);
-      //if error
-      if (response.error) {
-        //update status
-        res.status(response.code || 400);
-      }
-      //send response
-      res.json(response);
-    `)
-  });
-
   //export async function action(
   //  query: SearchParams
   //): Promise<ResponsePayload<ProfileExtended[]>>
   source.addFunction({
-    isExported: true,
+    isDefaultExport: true,
     name: 'action',
     isAsync: true,
     parameters: [

@@ -1,9 +1,9 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../types/Model';
+import type Model from '../../types/Model';
 //helpers
-import { typemap } from '../config';
-import { formatCode } from '../helpers';
+import { typemap } from '../../config';
+import { formatCode } from '../../helpers';
 
 type Location = Project|Directory;
 

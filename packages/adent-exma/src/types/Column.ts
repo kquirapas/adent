@@ -29,6 +29,8 @@ export type ColumnFormat = {
 export default class Column {
   //this is the raw column config collected from exma
   protected _config: ColumnConfig;
+  //type or model parent
+  protected _type: Type;
 
   /**
    * Returns the column attributes
@@ -170,7 +172,7 @@ export default class Column {
     }
     //get model
     const model = new Model(this.type);
-
+    //get the column
     const column = model.columns.find(
       column => column.relation?.foreign === this.name
     );
@@ -194,7 +196,8 @@ export default class Column {
   get relation() {
     const relation = this._config.attributes.relation as [{
       local: string,
-      foreign: string
+      foreign: string,
+      name?: string
     }] | undefined;
     //if no relation or invalid relation
     if (!relation || typeof relation[0] !== 'object') {
@@ -210,12 +213,14 @@ export default class Column {
     if (!column) {
       return null;
     }
+    //determine the relation name
+    const name = relation[0].name || this._type.nameLower;
     //now, determine what kind of relation
     const type = [ 
       this.multiple ? 2 : this.required ? 1 : 0,
       column.multiple ? 2 : column.required ? 1 : 0
     ];
-    return { ...relation[0], type, model };
+    return { ...relation[0], name, type, model };
   }
 
   /**
@@ -390,7 +395,8 @@ export default class Column {
   /**
    * Sets the column config
    */
-  constructor(config: ColumnConfig) {
+  constructor(collection: Type, config: ColumnConfig) {
     this._config = config;
+    this._type = collection;
   }
 }

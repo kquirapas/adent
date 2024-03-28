@@ -1,38 +1,44 @@
 //types
 import type { Project, Directory } from 'ts-morph';
-import type Model from '../../types/Model';
+import type Model from '../../../types/Model';
 //helpers
-import { typemap } from '../../config';
-import { formatCode } from '../../helpers';
+import { typemap } from '../../../config';
+import { formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
 
 export default function generate(project: Location, model: Model) {
-  const path = `${model.nameLower}/server/create.ts`;
+  const path = `${model.nameLower}/actions/update.ts`;
   const source = project.createSourceFile(path, '', { overwrite: true });
   const inputs = model.columns.filter(column => !column.generated);
   const checkers = inputs.filter(column => column.validators.length > 0);
   const helpers = inputs
-    .filter(column => !!typemap.type[column.type])
-    .map(column => typemap.type[column.type])
+    .filter(column => !!typemap.helper[column.type])
+    .map(column => typemap.helper[column.type])
     .filter((value, index, self) => self.indexOf(value) === index);
-  //import type { NextApiRequest, NextApiResponse } from 'next';
-  source.addImportDeclaration({
-    isTypeOnly: true,
-    moduleSpecifier: 'next',
-    namedImports: [ 'NextApiRequest', 'NextApiResponse' ]
+  const ids: string[] = [];
+  model.columns.forEach(column => {
+    if (column.id) {
+      ids.push(column.name);
+    }
   });
+
   //import type { ResponsePayload } from 'adent/types';
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: 'adent/types',
     namedImports: [ 'ResponsePayload' ]
   });
-  //import type { ProfileModel, ProfileCreateInput } from '../types';
+  //import type { ProfileModel, ProfileUpdateInput } from '../types';
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '../types',
-    namedImports: [ `${model.nameTitle}Model`, `${model.nameTitle}CreateInput` ]
+    namedImports: [ `${model.nameTitle}Model`, `${model.nameTitle}UpdateInput` ]
+  });
+  //import { sql, eq } from 'drizzle-orm';
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm',
+    namedImports: [ ids.length > 1 ? 'sql' : 'eq' ]
   });
   //import Exception from 'adent/Exception';
   source.addImportDeclaration({
@@ -49,52 +55,23 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: 'adent/helpers/server',
     namedImports: [ ...helpers, 'toResponse', 'toErrorResponse' ]
   });
-  //import { session } from '../../session';
-  source.addImportDeclaration({
-    moduleSpecifier: '../../session',
-    namedImports: [ 'session' ]
-  });
   //import { db, schema } from '../../store';
   source.addImportDeclaration({
     moduleSpecifier: '../../store',
     namedImports: [ 'db', 'schema' ]
   });
 
-  //export async function handler(req: NextApiRequest, res: NextApiResponse)
-  source.addFunction({
-    isExported: true,
-    name: 'handler',
-    isAsync: true,
-    parameters: [
-      { name: 'req', type: 'NextApiRequest' },
-      { name: 'res', type: 'NextApiResponse' }
-    ],
-    statements: formatCode(`
-      //check permissions
-      session.authorize(req, res, [ '${model.nameLower}-create' ]);
-      //get data
-      const data = req.body as ${model.nameTitle}CreateInput;
-      //call action
-      const response = await action(data);
-      //if error
-      if (response.error) {
-        //update status
-        res.status(response.code || 400);
-      }
-      //send response
-      res.json(response);
-    `)
-  });
-
   //export async function action(
-  //  data: ProfileCreateInput
+  //  id: string,
+  //  data: ProfileUpdateInput
   //): Promise<ResponsePayload<ProfileModel>>
   source.addFunction({
-    isExported: true,
+    isDefaultExport: true,
     name: 'action',
     isAsync: true,
     parameters: [
-      { name: 'data', type: `${model.nameTitle}CreateInput` }
+      ...ids.map(id => ({ name: id, type: 'string' })),
+      { name: 'data', type: `${model.nameTitle}UpdateInput` }
     ],
     returnType: `Promise<ResponsePayload<${model.nameTitle}Model>>`,
     statements: formatCode(`
@@ -102,18 +79,17 @@ export default function generate(project: Location, model: Model) {
       const errors: Record<string, any> = {};
       ${checkers.map(column => {
         const type = typemap.type[column.type];
-        const helper = typemap.type[column.type];
+        const helper = typemap.helper[column.type];
         const value = helper 
           ? `${helper}<${type}>(data.${column.name}, true)`
           : `data.${column.name}`;
-        const required = column.validators.find(
-          validator => validator.method === 'required'
-        );
         const optional = column.validators.filter(
           validator => validator.method !== 'required'
         ).map(validator => {
           if (validator.method === 'unique') {
-            return `if (await db.query.${model.nameCamel}.findFirst({
+            return `if (await db.query.${
+              model.nameCamel
+            }.findFirst({
               where: (${
                 model.nameCamel
               }, { eq }) => eq(${
@@ -130,25 +106,16 @@ export default function generate(project: Location, model: Model) {
           );
           const valid = parameters.length > 0
             ? `validators.${
+              validator.method}(data.${
+                column.name
+              }, ${parameters.join(', ')})`
+            : `validators.${
               validator.method
-            }(data.${
-              column.name
-            }, ${
-              parameters.join(', ')
-            })`
-            : `validators.${validator.method}(data.${column.name})`;
+            }(data.${column.name})`;
           return `if (!${valid}) {
             errors.${column.name} = '${validator.message}';
           }`;  
         });
-        //see if required
-        if (required) {
-          optional.unshift(`//check ${column.name}
-          if (!validators.required(data.${column.name})) {
-            errors.${column.name} = '${required.message}';
-          }`);
-          return optional.join(' else ');
-        }
         return `//check ${column.name}
           if (typeof data.${column.name} !== 'undefined') {
             ${optional.join(' else ')}
@@ -166,16 +133,22 @@ export default function generate(project: Location, model: Model) {
         );
       }
       //action and return response
-      return await db.insert(schema.${model.nameCamel}).values({
-        ${checkers.map(column => {
-          const helper = typemap.helper[column.type];
-          return helper 
-            ? `${column.name}: ${helper}(data.${column.name})`
-            : `${column.name}: data.${column.name}`;
-        }).join(',\n')}
-      })
-      .then(toResponse)
-      .catch(toErrorResponse);
+      return await db.update(schema.${model.nameCamel})
+        .set({
+          ${checkers.map(column => {
+            const helper = typemap.helper[column.type];
+            return helper 
+              ? `${column.name}: ${helper}(data.${column.name})`
+              : `${column.name}: data.${column.name}`
+          }).join(',\n')}
+        })
+        .where(${ids.length > 1
+          ? `sql\`${ids.map(id => `${id} = \${${id}}`).join(' AND ')}\``
+          : `eq(schema.${model.nameCamel}.${ids[0]}, ${ids[0]})`
+        })
+        .returning()
+        .then(toResponse)
+        .catch(toErrorResponse);
     `)
   });
 };

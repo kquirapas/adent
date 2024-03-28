@@ -1,5 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+
+import Session from 'adent/session/Session';
+import access from './access.json';
+
+export const seed = process.env.SESSION_SEED || '';
+export const session = new Session(seed, access);
  
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
