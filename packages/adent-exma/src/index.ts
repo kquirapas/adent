@@ -10,7 +10,8 @@ import Model from './types/Model';
 //generators
 import generateStore from './generators/store';
 import generateTypes from './generators/module/types';
-import generateSchema from './generators/module/schema';
+import generateSchema from './generators/schema';
+import generateModuleSchema from './generators/module/schema';
 
 import generateActionCreate from './generators/module/actions/create';
 import generateActionDetail from './generators/module/actions/detail';
@@ -116,14 +117,15 @@ export default function generate({ config, schema, cli }: PluginProps) {
   });
   const apiFolder = apiProject.createDirectory(apiPath);
   
-  const storeError = generateStore(libraryFolder, schema.model, settings);
+  const storeError = generateStore(libraryFolder, settings);
   if (storeError instanceof Error) {
     return cli.terminal.error(storeError.message);
   }
+  generateSchema(libraryFolder, schema.model, settings);
   for (const name in schema.model) {
     const model = new Model(schema.model[name]);
     generateTypes(libraryFolder, model);
-    generateSchema(libraryFolder, settings, model);
+    generateModuleSchema(libraryFolder, settings, model);
 
     generateActionCreate(libraryFolder, model);
     generateActionDetail(libraryFolder, model);

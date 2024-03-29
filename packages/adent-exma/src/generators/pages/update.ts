@@ -114,7 +114,7 @@ export default function generate(
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [ results ]);
         //veriables
-        const back = pathname.split('/').slice(0, -1).join('/');
+        const back = (pathname || '').split('/').slice(0, -1).join('/');
         const action = (e: FormEvent) => {
           e.preventDefault();
           handlers.action().then(response => {
@@ -122,7 +122,12 @@ export default function generate(
               return notify('error', response.message);
             }
             flash('success', _('${model.singular} created successfully'));
-            router.push(router.query.redirect as string || back);
+            if (router.query.redirect || back) {
+              flash('success', _('${model.singular} created successfully'));
+              router.push(router.query.redirect as string || back);
+            } else {
+              notify('success', _('${model.singular} created successfully')); 
+            }
           });
           return false;
         };
@@ -191,6 +196,19 @@ export default function generate(
               </form>
             </div>
           </main>
+        );
+      `)
+    });
+    //export default function Page()
+    source.addFunction({
+      isDefaultExport: true,
+      name: 'Page',
+      statements: formatCode(`
+        return (
+          <>
+            <Head />
+            <Body />
+          </>
         );
       `)
     });

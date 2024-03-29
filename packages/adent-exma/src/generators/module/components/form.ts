@@ -52,13 +52,29 @@ export default function generate(project: Location, model: Model) {
         const attributes = ${JSON.stringify(field.attributes)};
         //render
         return (
-          <${field.component} 
-            {...attributes}
-            className={className}
-            error={error} 
-            defaultValue={value.toString()} 
-            onUpdate={value => change('name', value)}
-          />
+          ${field.component === 'Country'
+            ? `<${field.component} 
+              {...attributes}
+              className={className}
+              error={error} 
+              defaultValue={value?.toString()} 
+              onUpdate={value => change('${column.name}', value.countryCode)}
+            />`
+            : field.component === 'Currency'
+            ? `<${field.component} 
+              {...attributes}
+              className={className}
+              error={error} 
+              defaultValue={value?.toString()} 
+              onUpdate={value => change('${column.name}', value.currencyCode)}
+            />`
+            : `<${field.component} 
+              {...attributes}
+              className={className}
+              error={error} 
+              defaultValue={value?.toString()} 
+              onUpdate={value => change('${column.name}', value)}
+            />`}
         );
       `)
     });

@@ -136,6 +136,9 @@ export default function generate(project: Location, model: Model) {
       return await db.update(schema.${model.nameCamel})
         .set({
           ${checkers.map(column => {
+            if (column.multiple) {
+              return `${column.name}: data.${column.name} ? JSON.stringify(data.${column.name}) : undefined`;  
+            }
             const helper = typemap.helper[column.type];
             return helper 
               ? `${column.name}: ${helper}(data.${column.name})`

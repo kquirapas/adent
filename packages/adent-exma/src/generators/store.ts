@@ -1,37 +1,32 @@
 //types
-import type { ModelConfig } from 'exma';
 import type { Project, Directory, SourceFile } from 'ts-morph';
 import type { ProjectSettings } from '../types';
 //helpers
 import { VariableDeclarationKind } from 'ts-morph';
-import { formatCode, camelize } from '../helpers';
+import { formatCode } from '../helpers';
 
 type Location = Project|Directory;
 
-export default function generate(
-  project: Location, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export default function generate(project: Location, config: ProjectSettings) {
   const source = project.createSourceFile('store.ts', '', { overwrite: true });
 
   switch (config.dbengine) {
     case 'neon':
-      return generateNeon(source, models, config);
+      return generateNeon(source, config);
     case 'xata':
-      return generateXata(source, models, config);
+      return generateXata(source, config);
     case 'postgres':
-      return generatePostgres(source, models, config);
+      return generatePostgres(source, config);
     case 'pg':
-      return generatePG(source, models, config);
+      return generatePG(source, config);
     case 'vercel':
-      return generateVercel(source, models, config);
+      return generateVercel(source, config);
     case 'planetscale':
-      return generatePlanetScale(source, models, config);
+      return generatePlanetScale(source, config);
     case 'mysql':
-      return generateMysql(source, models, config);
+      return generateMysql(source, config);
     case 'sqlite':
-      return generateSqlite(source, models, config);
+      return generateSqlite(source, config);
     default:
       return new Error(`Unknown database engine: ${config.dbengine}`);
   }
@@ -39,82 +34,41 @@ export default function generate(
 
 export function generateExports(
   source: SourceFile, 
-  models: Record<string, ModelConfig>,
   globalResource = true
 ) {
-  if (globalResource) {
-    source.addStatements(`if (process.env.NODE_ENV !== 'production') {`);
-    source.addStatements(`  resourceGlobal.resource = resource`);
-  }
-  source.addStatements(`}`);
-  for (const name in models) {
-    source.addImportDeclaration({
-      defaultImport: camelize(name),
-      moduleSpecifier: `./${camelize(name)}/schema`
-    });
-  }
   source.addVariableStatement({
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [{
-      name: 'schema',
-      initializer: formatCode(`{
-        ${Object
-          .values(models)
-          .map(model => camelize(model.name))
-          .join(',\n')
-        }
-      }`)
-    }]
-  });
-  source.addExportDeclaration({
-    namedExports: [ 'resource', 'schema' ]
-  });
-  source.addVariableStatement({
-    isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'db',
-      initializer: 'drizzle(resource, { schema })'
+      initializer: 'orm.drizzle(resource, { schema })'
     }]
   });
-
-  source.addVariableStatement({
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [{
-      name: 'store',
-      initializer: formatCode(`{
-        db,
-        schema,
-        resource
-      }`)
-    }]
-  });
-
-  source.addExportAssignment({
-    isExportEquals: false,
-    expression: 'store'
+  if (globalResource) {
+    source.addStatements(`if (process.env.NODE_ENV !== 'production') {`);
+    source.addStatements(`  resourceGlobal.resource = resource`);
+    source.addStatements(`}`);
+  }
+  source.addExportDeclaration({
+    namedExports: [ 'core', 'orm', 'resource', 'schema', 'db' ]
   });
 }
 
-export function generateNeon(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generateNeon(source: SourceFile, config: ProjectSettings) {
   if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
-  //import type { NeonQueryFunction } from "@neondatabase/serverless";
+  //import type { NeonQueryFunction } from '@neondatabase/serverless;
   //import { neon } from '@neondatabase/serverless';
-  //import { drizzle } from 'drizzle-orm/neon-http';
-  //import auth from './auth/server/schema'
+  //import * as core from 'drizzle-orm/pg-core';
+  //import * as orm from 'drizzle-orm/neon-http';
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown;
   //const resource = resourceGlobal.resource || neon(process.env.DRIZZLE_DATABASE_URL!);
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //export const store = drizzle(resource);
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: '@neondatabase/serverless',
@@ -125,8 +79,16 @@ export function generateNeon(
     namedImports: [ 'neon' ]
   });
   source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/pg-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
     moduleSpecifier: 'drizzle-orm/neon-http',
-    namedImports: [ 'drizzle' ]
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
@@ -146,31 +108,37 @@ export function generateNeon(
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generateXata(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generateXata(source: SourceFile, config: ProjectSettings) {
   //XATA
-  //import { drizzle } from 'drizzle-orm/xata-http';
-  //import { getXataClient } from '../xata';
+  //import { getXataClient } from 'xata';
+  //import * as core from 'drizzle-orm/pg-core';
+  //import * as orm from 'drizzle-orm/xata-http';
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown;
   //const resource = resourceGlobal.resource || getXataClient();
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //export const store = drizzle(resource);
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/xata-http',
-    namedImports: [ 'drizzle' ]
+    moduleSpecifier: 'xata',
+    namedImports: [ 'getXataClient' ]
   });
   source.addImportDeclaration({
-    moduleSpecifier: '../xata',
-    namedImports: [ 'getXataClient' ]
+    moduleSpecifier: 'drizzle-orm/pg-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/xata-http',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   
   source.addVariableStatement({
@@ -188,33 +156,39 @@ export function generateXata(
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generatePostgres(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generatePostgres(source: SourceFile, config: ProjectSettings) {
   if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
-  //import { drizzle } from 'drizzle-orm/postgres-js';
   //import postgres from 'postgres';
+  //import * as core from 'drizzle-orm/pg-core';
+  //import * as orm from 'drizzle-orm/postgres-js';
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown { resource: postgres.Sql };
   //const resource = resourceGlobal.resource || postgres(process.env.DATABASE_URL);
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //export const store = drizzle(resource);
-  source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/postgres-js',
-    namedImports: [ 'drizzle' ]
-  });
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     moduleSpecifier: 'postgres',
     defaultImport: 'postgres'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/pg-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/postgres-js',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
@@ -234,87 +208,90 @@ export function generatePostgres(
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generatePG(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generatePG(source: SourceFile, config: ProjectSettings) {
   if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
-  //import { drizzle } from "drizzle-orm/node-postgres";
-  //import { Client } from "pg";
-  //const resourceGlobal = global as unknown;
-  //const resource = resourceGlobal.resource || (() => {
-  //  const resource = new Client({ 
-  //    connectionString: process.env.DATABASE_URL 
-  //  });
-  //  resource.connect();
-  //  return resource;
-  //})();
+  //import { Pool } from 'pg';
+  //import * as core from 'drizzle-orm/pg-core';
+  //import * as orm from "drizzle-orm/node-postgres";
+  //import * as schema from './schema';
+  //const resourceGlobal = global as unknown as Pool;
+  //const resource = resourceGlobal.resource || new Pool({ 
+  //  connectionString: process.env.DATABASE_URL 
+  //});
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //export const store = drizzle(resource);
-  source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/node-postgres',
-    namedImports: [ 'drizzle' ]
-  });
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     moduleSpecifier: 'pg',
-    namedImports: [ 'Client' ]
+    namedImports: [ 'Pool' ]
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/pg-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/node-postgres',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resourceGlobal',
-      initializer: 'global as unknown as { resource: Client }'
+      initializer: 'global as unknown as { resource: Pool }'
     }]
   });
-
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
-      initializer: formatCode(`resourceGlobal.resource || (() => {
-        const resource = new Client({ 
-          connectionString: ${config.dburl.type === 'env' 
-            ? `process.env.${config.dburl.value} as string`
-            : `'${config.dburl.value}'`}
-        });
-        resource.connect();
-        return resource;
-      })()`)
+      initializer: formatCode(`resourceGlobal.resource || new Pool({
+        connectionString: ${config.dburl.type === 'env' 
+          ? `process.env.${config.dburl.value} as string`
+          : `'${config.dburl.value}'`}
+      })`)
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generateVercel(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generateVercel(source: SourceFile, config: ProjectSettings) {
   //Vercel
   //import { sql } from '@vercel/postgres';
-  //import { drizzle } from 'drizzle-orm/vercel-postgres';
-  //export const resource = sql;
-  //export const store = drizzle(resource);
+  //import * as core from 'drizzle-orm/pg-core';
+  //import * as orm from 'drizzle-orm/vercel-postgres';
+  //import * as schema from './schema';
+  //const resource = sql;
+  //const db = orm.drizzle(resource, { schema });
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     moduleSpecifier: '@vercel/postgres',
     namedImports: [ 'sql' ]
   });
   source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/pg-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
     moduleSpecifier: 'drizzle-orm/vercel-postgres',
-    namedImports: [ 'drizzle' ]
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
-    isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [{
       name: 'resource',
@@ -322,33 +299,39 @@ export function generateVercel(
     }]
   });
 
-  generateExports(source, models, false);
+  generateExports(source, false);
 };
 
-export function generatePlanetScale(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generatePlanetScale(source: SourceFile, config: ProjectSettings) {
   if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
-  //import { drizzle } from "drizzle-orm/planetscale-serverless";
   //import { Client } from "@planetscale/database";
+  //import * as core from 'drizzle-orm/mysql-core';
+  //import * as orm from "drizzle-orm/planetscale-serverless";
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown;
   //const resource = resourceGlobal.resource || new Client({ url: process.env.DATABASE_URL });
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //const store = drizzle(resource);
-  source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/planetscale-serverless',
-    namedImports: [ 'drizzle' ]
-  });
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     moduleSpecifier: '@planetscale/database',
     namedImports: [ 'Client' ]
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/mysql-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/planetscale-serverless',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
@@ -367,39 +350,45 @@ export function generatePlanetScale(
     }]
   });
   
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generateMysql(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
+export function generateMysql(source: SourceFile, config: ProjectSettings) {
   if (!config.dburl.value) {
     return new Error('Missing database URL');
   }
   //import type { Connection } from "mysql2";
-  //import { drizzle } from "drizzle-orm/mysql2";
   //import mysql from "mysql2";
+  //import * as core from 'drizzle-orm/mysql-core';
+  //import * as orm from "drizzle-orm/mysql2";
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown;
   //const resource = resourceGlobal.resource || mysql.createConnection(process.env.DATABASE_URL);
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //const store = drizzle(resource);
+  //export { core, orm, resource, schema, db };
   source.addImportDeclaration({
     isTypeOnly: true,
     moduleSpecifier: 'mysql2',
     namedImports: [ 'Connection' ]
   });
   source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/mysql2',
-    namedImports: [ 'drizzle' ]
-  });
-  source.addImportDeclaration({
     moduleSpecifier: 'mysql2',
     defaultImport: 'mysql'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/mysql-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/mysql2',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
@@ -418,30 +407,36 @@ export function generateMysql(
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };
 
-export function generateSqlite(
-  source: SourceFile, 
-  models: Record<string, ModelConfig>, 
-  config: ProjectSettings
-) {
-  //import { drizzle } from 'drizzle-orm/libsql';
+export function generateSqlite(source: SourceFile, config: ProjectSettings) {
   //import Database from 'better-sqlite3';
+  //import * as core from 'drizzle-orm/sqlite-core';
+  //import * as orm from 'drizzle-orm/libsql';
+  //import * as schema from './schema';
   //const resourceGlobal = global as unknown;
   //const resource = resourceGlobal.resource || new Database(process.env.DATABASE_FILE);
+  //const db = orm.drizzle(resource, { schema });
   //if (process.env.NODE_ENV !== 'production') {
-  //  prismaGlobal.resource = resource
+  //  resourceGlobal.resource = resource
   //}
-  //export { resource };
-  //export const store = drizzle(resource);
-  source.addImportDeclaration({
-    moduleSpecifier: 'drizzle-orm/libsql',
-    namedImports: [ 'drizzle' ]
-  });
+  //export {core,  orm, resource, schema, db };
   source.addImportDeclaration({
     moduleSpecifier: 'better-sqlite3',
     defaultImport: 'Database'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/sqlite-core',
+    defaultImport: '* as core'
+  });
+  source.addImportDeclaration({
+    moduleSpecifier: 'drizzle-orm/libsql',
+    defaultImport: '* as orm'
+  });
+  source.addImportDeclaration({
+    defaultImport: '* as schema',
+    moduleSpecifier: `./schema`
   });
   source.addVariableStatement({
     declarationKind: VariableDeclarationKind.Const,
@@ -460,5 +455,5 @@ export function generateSqlite(
     }]
   });
 
-  generateExports(source, models);
+  generateExports(source);
 };

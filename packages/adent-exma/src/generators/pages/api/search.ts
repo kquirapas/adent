@@ -41,7 +41,7 @@ export default function generate(
 
     //export async function handler(req: NextApiRequest, res: NextApiResponse)
     source.addFunction({
-      isExported: true,
+      isDefaultExport: true,
       name: 'handler',
       isAsync: true,
       parameters: [

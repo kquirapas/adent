@@ -9,6 +9,7 @@ import type {
 } from './types';
 //hooks
 import { useState, useEffect, useContext } from 'react';
+import { useRouter } from 'next/router';
 import { useLanguage } from 'r22n';
 //components
 import SessionContext from './Context';
@@ -149,12 +150,17 @@ export function useForm<Model>(config: FormConfig) {
 
 export function useFlag<Model>(config: FlagConfig) {
   const { method = 'get', path } = config;
+  const router = useRouter();
+  //in path, look for flags
+  const matches = Array.from(path.matchAll(/\[([a-zA-Z0-9_]+)\]/g));
   //hooks
   const { _ } = useLanguage();
   const { token } = useSession();
   const [ error, setError ] = useState<string>();
+  const [ endpoint, setEndpoint ] = useState<string>();
   const [ processing, process ] = useState(false);
   const [ results, setResults ] = useState<Model>();
+  //variables
   const handlers = {
     set: {
       error: setError,
@@ -162,14 +168,19 @@ export function useFlag<Model>(config: FlagConfig) {
       process: process
     },
     action: async (): Promise<Response<Model>> => {
-      if (processing) {
+      if (!endpoint) {
+        return {
+          error: true,
+          message: _('Invalid endpoint')
+        };
+      } else if (processing) {
         return {
           error: true,
           message: _('Already processing')
         };
       }
       process(true);
-      const payload = await fetch(path, { 
+      const payload = await fetch(endpoint, { 
         method,
         headers: {
           'Authorization': `Bearer ${token}`
@@ -187,9 +198,27 @@ export function useFlag<Model>(config: FlagConfig) {
       return false;
     }
   };
+  //effects
+  useEffect(() => {
+    if (router.isReady) {
+      if (matches.length) {
+        let endpoint = path;
+        //replace template variables with values from router.query
+        matches.forEach(match => {
+          endpoint = path.replace(match[0], router.query[match[1]] as string);
+        });
+        //update endpoint
+        setEndpoint(endpoint);
+      } else {
+        setEndpoint(path);
+      }
+    }
+  }, [ router.isReady ]);
+  //return
   return { 
     _,
     token, 
+    endpoint,
     handlers, 
     processing, 
     error, 
@@ -202,6 +231,7 @@ export function useDetail<Model>(config: FlagConfig) {
   const { 
     _,
     token, 
+    endpoint,
     handlers, 
     processing, 
     error, 
@@ -209,8 +239,9 @@ export function useDetail<Model>(config: FlagConfig) {
   } = useFlag<Model>({ method, path });
   //effects
   useEffect(() => {
+    if (!endpoint) return;
     handlers.action();
-  }, [])
+  }, [ endpoint ])
   return { 
     _,
     token, 

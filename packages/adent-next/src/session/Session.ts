@@ -30,27 +30,32 @@ export default class Session {
     permits: string[] = []
   ) {
     const authorization = req.headers['Authorization'] as string;
-    if (!authorization) {
-      return res.json(
-        toErrorResponse(
-          Exception
-            .for('Unauthorized')
-            .withCode(401)
-        )
-      );
-    }
-    const [ , token ] = authorization.split(' ');
-    const session = this.get(token);
-    //if no session
-    if (!session) {
-      return res.json(
-        toErrorResponse(
-          Exception.for('Unauthorized').withCode(401)
-        )
-      );
+    if (authorization) {
+      const [ , token ] = authorization.split(' ');
+      const session = this.get(token);
+      //if no session
+      if (!session) {
+        return res.json(
+          toErrorResponse(
+            Exception.for('Unauthorized').withCode(401)
+          )
+        );
+      }
+
+      if (!this.can(token, ...permits)) {
+        return res.json(
+          toErrorResponse(
+            Exception.for('Unauthorized').withCode(401)
+          )
+        );
+      }
+      
+      return { ...session, token };
     }
 
-    if (!this.can(token, ...permits)) {
+    const token = null;
+
+    if (!this.can('', ...permits)) {
       return res.json(
         toErrorResponse(
           Exception.for('Unauthorized').withCode(401)
@@ -58,7 +63,7 @@ export default class Session {
       );
     }
     
-    return { ...session, token };
+    return { id: 0, roles: [ 'GUEST' ], token };
   }
 
   /**

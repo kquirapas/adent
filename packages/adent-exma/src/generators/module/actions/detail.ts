@@ -31,85 +31,38 @@ export default function generate(project: Location, model: Model) {
     moduleSpecifier: '../types',
     namedImports: [ `${model.nameTitle}Extended` ]
   });
-  //import { toResponse, toErrorResponse } from 'adent/helpers/server';
+  //import search from './search';
   source.addImportDeclaration({
-    moduleSpecifier: 'adent/helpers/server',
-    namedImports: [ 'toResponse', 'toErrorResponse' ]
-  });
-  //import { db } from '../../store';
-  source.addImportDeclaration({
-    moduleSpecifier: '../../store',
-    namedImports: [ 'db' ]
+    moduleSpecifier: './search',
+    defaultImport: 'search'
   });
   //export async function action(
   //  id: string,
   //): Promise<ResponsePayload<ProfileModel>>
-  //find all the relations
-  const include: Record<string, true|{ with: Record<string, true> }> = Object.fromEntries(
-    model.relations.map(column => [
-      column.name,
-      (() => {
-        const model = column.relation?.model;
-        if (model?.relations.length) {
-          const include: Record<string, true> = Object.fromEntries(
-            model.relations.map(column => [ column.name, true ])
-          );
-          return { with: include };
-        }
-        return true;
-      })()
-    ])
-  );
   source.addFunction({
     isDefaultExport: true,
     name: 'action',
     isAsync: true,
     parameters: ids.map(id => ({ name: id, type: 'string' })),
-    returnType: `Promise<ResponsePayload<${model.nameTitle}Extended>>`,
-    statements: Object.keys(include).length ? formatCode(`
-      return await db.query.${model.nameCamel}
-        .findFirst({
-          where: ${ids.length > 1
-            ? `(${
-              model.nameCamel
-            }, { sql }) => sql\`${
-              ids.map(id => `${id} = \${${id}}`).join(' AND ')
-            }\``
-            : `(${
-              model.nameCamel
-            }, { eq }) => eq(${
-              model.nameCamel
-            }.${ids[0]}, ${ids[0]})`
-          },
-          with: ${JSON.stringify(include, null, 2).replaceAll('"', '')}
-        })
-        ${jsons.length > 0 
-          ? `.then(results => ({
-            ...results,
+    returnType: `Promise<ResponsePayload<${model.nameTitle}Extended|null>>`,
+    statements: formatCode(`
+      return search({
+        filter: { ${ids.map(id => `${id}`).join(', ')} },
+        take: 1
+      }).then(response => ({
+        ...response,
+        results: response.results?.[0] || null
+      }))
+      ${jsons.length > 1000 
+        ? `.then(response => ({
+          ...response,
+          results: {
+            ...response.results,
             ${jsons.map(column => `${column.name}: JSON.parse(results.${column.name})`).join(',\n')}
-          }))`
-          : ''
-        }
-        .then(toResponse)
-        .catch(toErrorResponse);
-    `): formatCode(`
-      return await db.query.${model.nameCamel}
-        .findFirst({
-          where: ${ids.length > 1
-            ? `(${
-              model.nameCamel
-            }, { sql }) => sql\`${
-              ids.map(id => `${id} = \${${id}}`).join(' AND ')
-            }\``
-            : `(${
-              model.nameCamel
-            }, { eq }) => eq(${
-              model.nameCamel}.${ids[0]}, ${ids[0]
-            })`
           }
-        })
-        .then(toResponse)
-        .catch(toErrorResponse);
+        }))`
+        : ''
+      };
     `)
   });
 };

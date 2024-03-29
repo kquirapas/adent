@@ -70,7 +70,7 @@ export default function generate(
         moduleSpecifier: `${config.name}/${model.nameLower}/components/form/${capitalize(column.name)}Field`,
         namedImports: [`${capitalize(column.name)}Control`]
       });
-    })
+    });
     //import notify, { flash } from 'adent/notify';
     source.addImportDeclaration({
       moduleSpecifier: 'adent/notify',
@@ -96,15 +96,19 @@ export default function generate(
           path:  \`/api/${pathset.generate('create', '${router.query?.id%i}')}\`
         });
         //variables
-        const back = pathname.split('/').slice(0, -1).join('/');
+        const back = (pathname || '').split('/').slice(0, -1).join('/');
         const action = (e: FormEvent) => {
           e.preventDefault();
           handlers.action().then(response => {
             if (response.error) {
               return notify('error', response.message);
             }
-            flash('success', _('${model.singular} created successfully'));
-            router.push(router.query.redirect as string || back);
+            if (router.query.redirect || back) {
+              flash('success', _('${model.singular} created successfully'));
+              router.push(router.query.redirect as string || back);
+            } else {
+              notify('success', _('${model.singular} created successfully')); 
+            }
           });
           return false;
         };
@@ -171,6 +175,19 @@ export default function generate(
               </form>
             </div>
           </main>
+        );
+      `)
+    });
+    //export default function Page()
+    source.addFunction({
+      isDefaultExport: true,
+      name: 'Page',
+      statements: formatCode(`
+        return (
+          <>
+            <Head />
+            <Body />
+          </>
         );
       `)
     });

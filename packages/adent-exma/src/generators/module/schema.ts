@@ -121,9 +121,6 @@ function attr(column: Column, relations: Relations) {
       attributes.push({ name: 'default', args: [ `${column.default}` ] });
     }
   }
-  if (column.id) {
-    attributes.push({ name: 'primaryKey', args: [] });
-  }
   if (column.attributes.autoincrement) {
     attributes.push({ name: 'autoincrement', args: [] });
   }
@@ -379,6 +376,8 @@ export default function generate(
       return `${
         column.name
       }Index: uniqueIndex('${
+        model.nameLower
+      }_${
         column.name
       }_idx').on(${
         model.nameCamel
@@ -388,6 +387,8 @@ export default function generate(
       return `${
         column.name
       }Index: index('${
+        model.nameLower
+      }_${
         column.name
       }_idx').on(${
         model.nameCamel
@@ -395,6 +396,16 @@ export default function generate(
     }
     return false;
   }).filter(Boolean) as string[];
+
+  if (model.ids.length > 0) {
+    methods.push('primaryKey');
+    const keyName = model.ids.length > 1 
+      ? `${model.nameCamel}PrimaryKeys`
+      : `${model.nameCamel}PrimaryKey` 
+    indexes.unshift(`${keyName}: primaryKey({ columns: [${
+      model.ids.map(column => `${model.nameCamel}.${column.name}`).join(', ')
+    }] })`);
+  }
 
   //import { sql } from 'drizzle-orm/sql';
   if (model.columns.some(column => column.default === 'now()')) {

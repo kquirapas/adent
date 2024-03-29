@@ -77,5 +77,85 @@
     "account-network-restore",
     "account-network-update"
   ],
-  "GUEST": []
+  "GUEST": [
+    "profile-create",
+    "profile-detail",
+    "profile-search",
+    "profile-remove",
+    "profile-restore",
+    "profile-update",
+
+    "auth-create",
+    "auth-detail",
+    "auth-search",
+    "auth-remove",
+    "auth-restore",
+    "auth-update",
+
+    "connection-create",
+    "connection-detail",
+    "connection-search",
+    "connection-remove",
+    "connection-restore",
+    "connection-update",
+
+    "file-create",
+    "file-detail",
+    "file-search",
+    "file-remove",
+    "file-restore",
+    "file-update",
+
+    "address-create",
+    "address-detail",
+    "address-search",
+    "address-remove",
+    "address-restore",
+    "address-update",
+
+    "profile-address-create",
+    "profile-address-detail",
+    "profile-address-search",
+    "profile-address-remove",
+    "profile-address-restore",
+    "profile-address-update",
+
+    "profile-file-create",
+    "profile-file-detail",
+    "profile-file-search",
+    "profile-file-remove",
+    "profile-file-restore",
+    "profile-file-update",
+
+    "profile-network-create",
+    "profile-network-detail",
+    "profile-network-search",
+    "profile-network-remove",
+    "profile-network-restore",
+    "profile-network-update",
+
+    "account-detail",
+    "account-update",
+
+    "account-address-create",
+    "account-address-detail",
+    "account-address-search",
+    "account-address-remove",
+    "account-address-restore",
+    "account-address-update",
+
+    "account-file-create",
+    "account-file-detail",
+    "account-file-search",
+    "account-file-remove",
+    "account-file-restore",
+    "account-file-update",
+
+    "account-network-create",
+    "account-network-detail",
+    "account-network-search",
+    "account-network-remove",
+    "account-network-restore",
+    "account-network-update"
+  ]
 }

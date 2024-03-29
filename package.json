@@ -8,7 +8,8 @@
     "build": "yarn build:exma && yarn build:next",
     "build:exma": "yarn --cwd packages/adent-exma build",
     "build:next": "yarn --cwd packages/adent-next build",
-    "exma": "yarn --cwd example exma",
+    "generate": "yarn --cwd example generate",
+    "dbpush": "yarn --cwd example dbpush",
     "dev": "yarn --cwd example dev"
   },
   "devDependencies": {
