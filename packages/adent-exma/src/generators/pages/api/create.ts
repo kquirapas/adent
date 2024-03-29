@@ -16,6 +16,10 @@ export default function generate(
   model.pathset.forEach(pathset => {
     const path = `${pathset.generate('create', '[id%i]')}.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
+    const permissions = pathset.paths
+      .filter(path => path.type !== 'id')
+      .map(path => path.name)
+      .join('-');
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({
       isTypeOnly: true,
@@ -50,7 +54,7 @@ export default function generate(
       ],
       statements: formatCode(`
         //check permissions
-        session.authorize(req, res, [ '${model.nameLower}-create' ]);
+        session.authorize(req, res, [ '${permissions}-create' ]);
         //get data
         const data = req.body as ${model.nameTitle}CreateInput;
         ${pathset.paths.filter(

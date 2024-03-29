@@ -15,6 +15,10 @@ export default function generate(
   model.pathset.forEach(pathset => {
     const path = `${pathset.generate('search', '[id%i]')}/index.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
+    const permissions = pathset.paths
+      .filter(path => path.type !== 'id')
+      .map(path => path.name)
+      .join('-');
 
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({
@@ -50,7 +54,7 @@ export default function generate(
       ],
       statements: formatCode(`
         //check permissions
-        session.authorize(req, res, [ '${model.nameLower}-search' ]);
+        session.authorize(req, res, [ '${permissions}-search' ]);
         //get query
         const query: SearchParams = req.query || {};
         //call action

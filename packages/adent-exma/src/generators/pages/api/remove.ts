@@ -16,6 +16,10 @@ export default function generate(
   model.pathset.forEach(pathset => {
     const path = `${pathset.generate('remove', '[id%i]')}.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
+    const permissions = pathset.paths
+      .filter(path => path.type !== 'id')
+      .map(path => path.name)
+      .join('-');
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({
       isTypeOnly: true,
@@ -54,7 +58,7 @@ export default function generate(
       ],
       statements: formatCode(`
         //check permissions
-        session.authorize(req, res, [ '${model.nameLower}-remove' ]);
+        session.authorize(req, res, [ '${permissions}-remove' ]);
         //get id
         ${pathset.paths.filter(
           path => path.type === 'id'

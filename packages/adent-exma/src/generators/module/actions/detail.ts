@@ -2,7 +2,6 @@
 import type { Project, Directory } from 'ts-morph';
 import type Model from '../../../types/Model';
 //helpers
-import { typemap } from '../../../config';
 import { formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
@@ -16,9 +15,6 @@ export default function generate(project: Location, model: Model) {
       ids.push(column.name);
     }
   });
-  const jsons = model.columns.filter(
-    column => typemap.literal[column.type] === 'json'
-  );
   //import type { ResponsePayload } from 'adent/types';
   source.addImportDeclaration({
     isTypeOnly: true,
@@ -52,17 +48,7 @@ export default function generate(project: Location, model: Model) {
       }).then(response => ({
         ...response,
         results: response.results?.[0] || null
-      }))
-      ${jsons.length > 1000 
-        ? `.then(response => ({
-          ...response,
-          results: {
-            ...response.results,
-            ${jsons.map(column => `${column.name}: JSON.parse(results.${column.name})`).join(',\n')}
-          }
-        }))`
-        : ''
-      };
+      }));
     `)
   });
 };

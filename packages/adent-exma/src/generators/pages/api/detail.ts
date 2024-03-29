@@ -16,6 +16,10 @@ export default function generate(
   model.pathset.forEach(pathset => {
     const path = `${pathset.generate('detail', '[id%i]')}/index.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
+    const permissions = pathset.paths
+      .filter(path => path.type !== 'id')
+      .map(path => path.name)
+      .join('-');
 
     model.pathmeta.map(reference => {
       //make sure we are not changing the original array
@@ -74,7 +78,7 @@ export default function generate(
       ],
       statements: formatCode(`
         //check permissions
-        session.authorize(req, res, [ '${model.nameLower}-detail' ]);
+        session.authorize(req, res, [ '${permissions}-detail' ]);
         //get id
         ${pathset.paths.filter(
           path => path.type === 'id'
