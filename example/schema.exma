@@ -42,14 +42,17 @@ model Profile @label("Profile" "Profiles" "[name]") {
   
   roles       String[] @label("Roles") 
                        @field.textlist
+                       @list.hide
                        @view.tags
   
   tags        String[] @label("Tags") 
                        @field.tags
+                       @list.hide
                        @view.tags
   
   references  Hash?    @label("References") 
                        @field.metadata
+                       @list.hide
                        @view.metadata
   
   active      Boolean  @label("Active") 
@@ -162,6 +165,7 @@ model Connection @label("Connection" "Connections" "[owner.name] - [member.name]
   
   tags     String[] @label("Tags") 
                     @field.tags
+                    @list.hide
                     @view.tags
   
   active   Boolean  @label("Active") 
@@ -211,6 +215,7 @@ model File @label("File" "Files" "[name]") {
   
   tags      String[] @label("Tags") 
                      @field.tags
+                     @list.hide
                      @view.tags
   
   active    Boolean  @label("Active") 

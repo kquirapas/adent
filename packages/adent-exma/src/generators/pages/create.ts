@@ -12,9 +12,9 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-  model.pathset.forEach(paths => {
+  model.pathset.forEach(pathset => {
     //get the path where this should be saved
-    const path = `${paths('create', '[%s]')}.tsx`;
+    const path = `${pathset.generate('create', '[id%i]')}.tsx`;
     const source = project.createSourceFile(path, '', { overwrite: true });
 
     //import type { FormEvent } from 'react';
@@ -93,7 +93,7 @@ export default function generate(
           errors
         } = useForm<${model.nameTitle}Model>({ 
           method: 'post', 
-          path:  \`/api/${paths('create', '${router.query?.%s}')}\`
+          path:  \`/api/${pathset.generate('create', '${router.query?.id%i}')}\`
         });
         //variables
         const back = pathname.split('/').slice(0, -1).join('/');

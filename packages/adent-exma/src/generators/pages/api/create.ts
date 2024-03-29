@@ -12,8 +12,8 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-  model.pathset.forEach(paths => {
-    const path = `${paths('create', '[%s]')}.ts`;
+  model.pathset.forEach(pathset => {
+    const path = `${pathset.generate('create', '[id%i]')}.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({

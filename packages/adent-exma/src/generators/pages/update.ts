@@ -12,9 +12,9 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-  model.pathset.forEach(paths => {
+  model.pathset.forEach(pathset => {
     //get the path where this should be saved
-    const path = `${paths('update', '[%s]')}.tsx`;
+    const path = `${pathset.generate('update', '[id%i]')}.tsx`;
     const source = project.createSourceFile(path, '', { overwrite: true });
 
     //import type { FormEvent } from 'react';
@@ -96,7 +96,7 @@ export default function generate(
           processing: loading 
         } = useDetail<${model.nameTitle}Extended>({ 
           method: 'get',
-          path:  \`/api/${paths('detail', '${router.query?.%s}')}\`
+          path:  \`/api/${pathset.generate('detail', '${router.query?.id%i}')}\`
         });
         const {
           handlers, 
@@ -105,7 +105,7 @@ export default function generate(
           errors
         } = useForm<${model.nameTitle}Model>({ 
           method: 'put', 
-          path:  \`/api/${paths('update', '${router.query?.%s}')}\`
+          path:  \`/api/${pathset.generate('update', '${router.query?.id%i}')}\`
         });
         //effects
         useEffect(() => {

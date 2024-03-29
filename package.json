@@ -8,7 +8,8 @@
     "build": "yarn build:exma && yarn build:next",
     "build:exma": "yarn --cwd packages/adent-exma build",
     "build:next": "yarn --cwd packages/adent-next build",
-    "exma": "yarn --cwd example exma"
+    "exma": "yarn --cwd example exma",
+    "dev": "yarn --cwd example dev"
   },
   "devDependencies": {
     "npm-run-all": "4.1.5"

@@ -12,8 +12,8 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-    model.pathset.forEach(paths => {
-      const path = `${paths('detail', '[%s]')}/index.tsx`;
+    model.pathset.forEach(pathset => {
+      const path = `${pathset.generate('detail', '[id%i]')}/index.tsx`;
       const source = project.createSourceFile(path, '', { overwrite: true });
 
       //import type { ProfileExtended } from 'modules/profile/types';
@@ -85,7 +85,7 @@ export default function generate(
           const { _ } = useLanguage();
           const { results } = useDetail<${model.nameTitle}Extended>({ 
             method: 'get',
-            path:  \`/api/${paths('detail', '${router.query?.%s}')}\`
+            path:  \`/api/${pathset.generate('detail', '${router.query?.id%i}')}\`
           });
         
           return {_, results };

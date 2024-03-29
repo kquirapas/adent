@@ -12,8 +12,8 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-    model.pathset.forEach(paths => {
-      const path = `${paths('search', '[%s]')}/index.tsx`;
+    model.pathset.forEach(pathset => {
+      const path = `${pathset.generate('search', '[id%i]')}/index.tsx`;
       const source = project.createSourceFile(path, '', { overwrite: true });
 
       //import type { ProfileExtended } from 'modules/profile/types';
@@ -91,7 +91,7 @@ export default function generate(
             opened
           } = useSearch<${model.nameTitle}Extended>({ 
             method: 'get',
-            path:  \`/api/${paths('search', '${router.query?.%s}')}\`
+            path:  \`/api/${pathset.generate('search', '${router.query?.id%i}')}\`
           });
         
           return {
@@ -150,13 +150,15 @@ export default function generate(
                   ${model.lists.map(column => (
                     `<Thead>${column.label || column.name}</Thead>`
                   )).join('\n')}
-                  {results.rows?.map((result, index) => (
+                  {results.rows?.map((row, index) => (
                     <Trow key={index}>
                       ${model.lists.map(column => (`
                         <Tcol>
                           ${column.list.component === false
-                            ? `{result.${column.name}}`
-                            : `<${capitalize(column.name)}Format value={result.${column.name}} />`
+                            ? `{row.${column.name}}`
+                            : column.required
+                            ? `<${capitalize(column.name)}Format value={row.${column.name}} />` 
+                            : `{row.${column.name} && <${capitalize(column.name)}Format value={row.${column.name}} />}`
                           }
                         </Tcol>
                       `)).join('\n')}

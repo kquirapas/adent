@@ -3,6 +3,7 @@ import type { Project, Directory } from 'ts-morph';
 import type { ProjectSettings } from '../../../types';
 import type Model from '../../../types/Model';
 //helpers
+import { typemap } from '../../../config';
 import { formatCode } from '../../../helpers';
 
 type Location = Project|Directory;
@@ -12,10 +13,9 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-  model.pathset.forEach(paths => {
-    const path = `${paths('update', '[%s]')}.ts`;
+  model.pathset.forEach(pathset => {
+    const path = `${pathset.generate('update', '[id%i]')}.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
-    const ids = model.ids.map(column => column.name);
 
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({
@@ -65,18 +65,37 @@ export default function generate(
         //get data
         const data = req.body as ${model.nameTitle}UpdateInput;
         //get id
-        ${ids.map(id => `
-          const ${id} = req.query.${id} as string;
-          if (!${id}) {
-            return res.json(
-              toErrorResponse(
-                Exception.for('Not Found').withCode(404)
-              )
-            );
-          }
-        `).join('\n')}
+        ${pathset.paths.filter(
+          path => path.type === 'id'
+        ).filter(
+          path => model.ids.map(column => column.name).includes(path.name)
+        ).map(path => {
+          const column = path.model.columns.filter(
+            column => column.name === path.name
+          )[0];
+          return `
+            ${typemap.type[column.type] === 'number'
+              ? `const ${path.name} = parseInt(req.query?.id${path.i} || 0);`
+              : `const ${path.name} = req.query?.id${path.i} as string;`
+            }
+            if (!${path.name}) {
+              return res.json(
+                toErrorResponse(
+                  Exception.for('Not Found').withCode(404)
+                )
+              );
+            }
+          `;
+        }).join('\n')}
         //call action
-        const response = await action(${ids.join(', ')}, data);
+        const response = await action(${pathset.paths
+          .filter(path => path.type === 'id')
+          .filter(
+            path => model.ids.map(column => column.name).includes(path.name)
+          )
+          .map(path => path.name)
+          .join(', ')
+        }, data);
         //if error
         if (response.error) {
           //update status

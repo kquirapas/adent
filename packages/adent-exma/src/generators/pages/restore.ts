@@ -12,8 +12,8 @@ export default function generate(
   config: ProjectSettings, 
   model: Model
 ) {
-    model.pathset.forEach(paths => {
-      const path = `${paths('restore', '[%s]')}.tsx`;
+    model.pathset.forEach(pathset => {
+      const path = `${pathset.generate('restore', '[id%i]')}.tsx`;
       const source = project.createSourceFile(path, '', { overwrite: true });
 
       //import type { ProfileExtended } from 'modules/profile/types';
@@ -87,11 +87,11 @@ export default function generate(
             processing: loading 
           } = useDetail<${model.nameTitle}Extended>({ 
             method: 'get',
-            path:  \`/api/${paths('detail', '${router.query?.%s}')}\`
+            path:  \`/api/${pathset.generate('detail', '${router.query?.id%i}')}\`
           });
           const { handlers, processing } = useFlag<${model.nameTitle}Extended>({ 
             method: 'delete',
-            path:  \`/api/${paths('restore', '${router.query?.%s}')}\`
+            path:  \`/api/${pathset.generate('restore', '${router.query?.id%i}')}\`
           });
 
           const action = () => {

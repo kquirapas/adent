@@ -64,7 +64,7 @@ export default class Model extends Type {
   /**
    * Returns all the path meta data for this model
    */
-  get pathmeta(): { model: Model, type: string, name: string }[][] {
+  get pathmeta(): { model: Model, type: string, name: string, i?: number }[][] {
     //if there are no relations
     if (!this.relations.length) {
       //this model should be a root path
@@ -86,6 +86,9 @@ export default class Model extends Type {
       return relation.model.pathmeta.map(
         meta => meta.concat([{
           model: this,
+          //NextJS: You cannot use different slug names for the same dynamic path
+          //NextJS: You cannot have the same slug name "id" repeat within a single dynamic path
+          //so should be unique ids in each path
           type: 'id',
           name: relation.local
         }, {
@@ -103,7 +106,10 @@ export default class Model extends Type {
   get pathset() {
     return this.pathmeta.map(reference => {
       //make sure we are not changing the original array
-      const paths = Array.from(reference);
+      let i = 0;
+      const paths = Array.from(reference).map(
+        path => path.type === 'id' ? { ...path, i: i++ }: { ...path }
+      );
       //get the path names
       const names = paths.map(path => path.name);
       //add the ids that are not already in the path
@@ -114,35 +120,39 @@ export default class Model extends Type {
           paths.push({
             model: this,
             type: 'id',
-            name: column.name
+            name: column.name,
+            i: i++
           });
         }
       });
 
-      return (key: string, toString = '[%s]') => {
-        const root = reference.map(path => path.type === 'id' 
-          ? toString.replace('%s', path.name)
-          : path.name
-        ).join('/');
-        const detail = paths.map(path => path.type === 'id' 
-          ? toString.replace('%s', path.name)
-          : path.name
-        ).join('/');
-        switch (key) {
-          case 'create':
-            return `${root}/create`;
-          case 'detail':
-            return detail;
-          case 'remove':
-            return `${detail}/remove`;
-          case 'restore':
-            return `${detail}/restore`;
-          case 'update':
-            return `${detail}/update`;
-          case 'root':
-          case 'search':
-          default:
-            return root;
+      return {
+        paths: paths,
+        generate: (key: string, toString = '[%s]') => {
+          const root = reference.map(path => path.type === 'id' 
+            ? toString.replace('%s', path.name).replace('%i', (path.i || 0).toString())
+            : path.name
+          ).join('/');
+          const detail = paths.map(path => path.type === 'id' 
+            ? toString.replace('%s', path.name).replace('%i', (path.i || 0).toString())
+            : path.name
+          ).join('/');
+          switch (key) {
+            case 'create':
+              return `${root}/create`;
+            case 'detail':
+              return detail;
+            case 'remove':
+              return `${detail}/remove`;
+            case 'restore':
+              return `${detail}/restore`;
+            case 'update':
+              return `${detail}/update`;
+            case 'root':
+            case 'search':
+            default:
+              return root;
+          }
         }
       };
     });

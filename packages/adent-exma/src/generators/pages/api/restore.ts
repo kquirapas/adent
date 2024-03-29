@@ -16,10 +16,9 @@ export default function generate(
   if (!model.restorable) {
     return;
   }
-  model.pathset.forEach(paths => {
-    const path = `${paths('restore', '[%s]')}.ts`;
+  model.pathset.forEach(pathset => {
+    const path = `${pathset.generate('restore', '[id%i]')}.ts`;
     const source = project.createSourceFile(path, '', { overwrite: true });
-    const ids = model.ids;
 
     //import type { NextApiRequest, NextApiResponse } from 'next';
     source.addImportDeclaration({
@@ -61,18 +60,37 @@ export default function generate(
         //check permissions
         session.authorize(req, res, [ '${model.nameLower}-restore' ]);
         //get id
-        ${ids.map(id => `
-          const ${id.name} = req.query.${id.name} as ${typemap.type[id.type]};
-          if (!${id.name}) {
-            return res.json(
-              toErrorResponse(
-                Exception.for('Not Found').withCode(404)
-              )
-            );
-          }
-        `).join('\n')}
+        ${pathset.paths.filter(
+          path => path.type === 'id'
+        ).filter(
+          path => model.ids.map(column => column.name).includes(path.name)
+        ).map(path => {
+          const column = path.model.columns.filter(
+            column => column.name === path.name
+          )[0];
+          return `
+            ${typemap.type[column.type] === 'number'
+              ? `const ${path.name} = parseInt(req.query?.id${path.i} || 0);`
+              : `const ${path.name} = req.query?.id${path.i} as string;`
+            }
+            if (!${path.name}) {
+              return res.json(
+                toErrorResponse(
+                  Exception.for('Not Found').withCode(404)
+                )
+              );
+            }
+          `;
+        }).join('\n')}
         //call action
-        const response = await action(${ids.map(id => id.name).join(', ')});
+        const response = await action(${pathset.paths
+          .filter(path => path.type === 'id')
+          .filter(
+            path => model.ids.map(column => column.name).includes(path.name)
+          )
+          .map(path => path.name)
+          .join(', ')
+        });
         //if error
         if (response.error) {
           //update status
